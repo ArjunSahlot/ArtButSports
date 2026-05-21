@@ -71,7 +71,10 @@ async def query(
         raise HTTPException(status_code=503, detail="Feature table is not loaded")
     data = await image.read()
     image_bgr = read_image_bytes(data)
-    embedding = await embed_image_bytes_async(data, image.content_type or "image/jpeg")
+    try:
+        embedding = await embed_image_bytes_async(data, image.content_type or "image/jpeg")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}") from exc
     weight_payload = json.loads(weights) if weights else None
     query_blocks = query_feature_blocks(image_bgr, embedding)
     scores = score_query(STORE, query_blocks, weight_payload)
