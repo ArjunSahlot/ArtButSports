@@ -1,0 +1,2 @@
+"""ArtButSports backend package."""
+

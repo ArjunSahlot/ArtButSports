@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: #050505;
+  color: #f7f7f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.masonry {
+  column-count: 1;
+  column-gap: 18px;
+}
+
+@media (min-width: 720px) {
+  .masonry {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 1080px) {
+  .masonry {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 1440px) {
+  .masonry {
+    column-count: 4;
+  }
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 18px;
+}
+
