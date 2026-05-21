@@ -10,7 +10,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from artbutsports.features import embed_image_bytes_async, read_image_bytes, visualize_step
+from artbutsports.features import embed_image_bytes_async, encode_png_data_url, read_image_bytes, read_image_path, visualize_step
 from artbutsports.scoring import DEFAULT_WEIGHTS, FeatureStore, load_feature_store, query_feature_blocks, score_query
 
 load_dotenv()
@@ -122,3 +122,19 @@ async def visualize(
             raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}") from exc
     return {"step": step, **visualize_step(image_bgr, step)}
 
+
+@app.get("/visualize/sample/{step}")
+async def visualize_sample(step: str) -> dict[str, Any]:
+    if not IMAGE_MANIFEST:
+        raise HTTPException(status_code=503, detail="Image manifest is not loaded")
+    art_id, path = next(iter(IMAGE_MANIFEST.items()))
+    image_bgr = read_image_path(path)
+    payload = {"sample_id": art_id, "before": encode_png_data_url(image_bgr), "step": step}
+    if step == "embeddings":
+        data = Path(path).read_bytes()
+        try:
+            embedding = await embed_image_bytes_async(data, "image/jpeg")
+            return {**payload, "dimensions": int(embedding.shape[0]), **visualize_step(image_bgr, step)}
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}") from exc
+    return {**payload, **visualize_step(image_bgr, step)}

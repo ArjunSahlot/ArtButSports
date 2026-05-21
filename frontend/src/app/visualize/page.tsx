@@ -2,8 +2,8 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight } from "lucide-react";
-import { useState } from "react";
-import { visualizeStep } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { visualizeSample, visualizeStep } from "@/lib/api";
 
 const sections = [
   { step: "embeddings", title: "Embeddings", copy: "Gemini maps the image into a normalized semantic vector for broad visual meaning." },
@@ -24,6 +24,21 @@ export default function VisualizePage() {
 }
 
 function VisualSection({ step, title, copy }: { step: string; title: string; copy: string }) {
+  const [sample, setSample] = useState<{ before?: string; after?: string; error?: string }>({});
+  useEffect(() => {
+    let cancelled = false;
+    visualizeSample(step)
+      .then((data) => {
+        const images = data.images ? Object.values(data.images) as string[] : [];
+        if (!cancelled) setSample({ before: data.before, after: images[0] });
+      })
+      .catch((err) => {
+        if (!cancelled) setSample({ error: err instanceof Error ? err.message : "Sample failed" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [step]);
   return (
     <section className="grid gap-8 border-t border-line pt-10 md:grid-cols-[0.8fr_1.2fr]">
       <div>
@@ -32,11 +47,23 @@ function VisualSection({ step, title, copy }: { step: string; title: string; cop
         <TryModal step={step} title={title} />
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-        <div className="aspect-[4/3] rounded-lg border border-line bg-[radial-gradient(circle_at_35%_20%,rgba(55,255,180,0.18),transparent_35%),#0d0d10]" />
+        <VisualPanel src={sample.before} label="Before" error={sample.error} />
         <span className="text-zinc-500">→</span>
-        <div className="aspect-[4/3] rounded-lg border border-line bg-[radial-gradient(circle_at_65%_35%,rgba(255,71,120,0.20),transparent_36%),#0d0d10]" />
+        <VisualPanel src={sample.after} label="After" error={sample.error} />
       </div>
     </section>
+  );
+}
+
+function VisualPanel({ src, label, error }: { src?: string; label: string; error?: string }) {
+  return (
+    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line bg-panel">
+      {src ? (
+        <img src={src} alt={label} className="h-full w-full object-contain" />
+      ) : (
+        <span className="px-4 text-center text-xs text-zinc-500">{error ? "Sample unavailable" : "Loading"}</span>
+      )}
+    </div>
   );
 }
 
@@ -79,4 +106,3 @@ function TryModal({ step, title }: { step: string; title: string }) {
     </Dialog.Root>
   );
 }
-

@@ -34,9 +34,14 @@ export async function visualizeStep(file: File, step: string) {
   return res.json();
 }
 
+export async function visualizeSample(step: string) {
+  const res = await fetch(`${API_BASE}/visualize/sample/${step}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export function absoluteImageUrl(url: string) {
   if (!url) return "";
   if (url.startsWith("http") || url.startsWith("data:")) return url;
   return `${API_BASE}${url}`;
 }
-
