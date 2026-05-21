@@ -38,10 +38,14 @@ Useful flags:
 
 - `--checkpoint-dir PATH`: put checkpoint records somewhere explicit.
 - `--checkpoint-every N`: update manifest/failure summaries every N processed artworks.
+- `--download-workers N`: parallel image download workers. Default: `16`.
+- `--embedding-workers N`: parallel Gemini embedding workers. Default: `8`.
 - `--keep-checkpoint`: keep complete checkpoint records after a successful build.
 - `--fresh`: delete the checkpoint and start over. Use this only when you intentionally want to discard saved work.
 
 The final `.npz` includes complete rows only and stores `incomplete_summary` so operators can see whether any rows were left out. If incomplete records remain, the checkpoint is kept even without `--keep-checkpoint`.
+
+Build stages are intentionally separated for speed and stability. Downloads are prefetched concurrently first, local model features run next, and embeddings are filled concurrently at the end. This keeps external API latency from blocking local GPU/CPU work while avoiding multiple simultaneous YOLO/CAM jobs competing for VRAM.
 
 ## Full Local Build
 

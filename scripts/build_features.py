@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -51,8 +52,10 @@ def parse_args() -> argparse.Namespace:
         "--checkpoint-every",
         type=int,
         default=25,
-        help="Flush a shard after this many successful rows (crash loses at most one batch).",
+        help="Flush manifest/failure summaries after this many processed rows.",
     )
+    parser.add_argument("--download-workers", type=int, default=16, help="Concurrent image download workers.")
+    parser.add_argument("--embedding-workers", type=int, default=8, help="Concurrent Gemini embedding workers.")
     parser.add_argument("--fresh", action="store_true", help="Ignore/delete existing checkpoint and start over.")
     parser.add_argument("--keep-checkpoint", action="store_true", help="Keep checkpoint shards after a successful build.")
     parser.add_argument("--limit", type=int, default=None, help="Build only the first N rows for local verification.")
@@ -85,6 +88,10 @@ def download(url: str, path: Path) -> bool:
         if path.exists():
             path.unlink(missing_ok=True)
         return False
+
+
+def path_ready(path: Path) -> bool:
+    return path.exists() and path.stat().st_size > 0
 
 
 def pairwise_sample_calibration(blocks: dict[str, np.ndarray], sample_size: int = 512, seed: int = 42) -> dict[str, dict[str, float]]:
@@ -341,6 +348,7 @@ def compute_missing_features(
     image_file: Path,
     skip_embeddings: bool,
     failures: list[dict[str, Any]],
+    include_embedding: bool,
 ) -> bool:
     changed = False
     completed = record["completed"]
@@ -380,7 +388,7 @@ def compute_missing_features(
             record_failure(record, failures, "pose", repr(exc))
             changed = True
 
-    if not completed.get("embedding", False):
+    if include_embedding and not completed.get("embedding", False):
         try:
             record["embeddings"] = np.zeros(3072, dtype=np.float32) if skip_embeddings else embed_image_path(image_file)
             completed["embedding"] = True
@@ -390,6 +398,105 @@ def compute_missing_features(
             changed = True
 
     return changed
+
+
+def prefetch_images(
+    *,
+    rows: list[tuple[int, pd.Series]],
+    cache_dir: Path,
+    checkpoint_dir: Path,
+    failures: list[dict[str, Any]],
+    workers: int,
+) -> int:
+    jobs = []
+    for _, row in rows:
+        art_id = str(row["id"])
+        record = load_record(checkpoint_dir, row, art_id)
+        if is_record_complete(record):
+            continue
+        path = image_path(cache_dir, row)
+        if path_ready(path):
+            continue
+        jobs.append((row, art_id, path, str(row["image_web"])))
+
+    if not jobs:
+        return 0
+
+    failed = 0
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        futures = {pool.submit(download, url, path): (row, art_id, path) for row, art_id, path, url in jobs}
+        for future in tqdm(as_completed(futures), total=len(futures), desc="downloads"):
+            row, art_id, path = futures[future]
+            ok = False
+            try:
+                ok = bool(future.result())
+            except Exception:
+                ok = False
+            if ok:
+                continue
+            failed += 1
+            record = load_record(checkpoint_dir, row, art_id)
+            record_failure(record, failures, "download", "download failed")
+            write_record(checkpoint_dir, record)
+    return failed
+
+
+def _embed_one(path: Path, skip_embeddings: bool) -> np.ndarray:
+    if skip_embeddings:
+        return np.zeros(3072, dtype=np.float32)
+    return embed_image_path(path)
+
+
+def fill_missing_embeddings(
+    *,
+    rows: list[tuple[int, pd.Series]],
+    cache_dir: Path,
+    checkpoint_dir: Path,
+    failures: list[dict[str, Any]],
+    skip_embeddings: bool,
+    workers: int,
+    checkpoint_every: int,
+    manifest: dict[str, Any],
+    failure_path: Path,
+) -> None:
+    jobs = []
+    for _, row in rows:
+        art_id = str(row["id"])
+        record = load_record(checkpoint_dir, row, art_id)
+        if record["completed"].get("embedding", False):
+            continue
+        path = image_path(cache_dir, row)
+        if not path_ready(path):
+            continue
+        jobs.append((row, art_id, path))
+
+    if not jobs:
+        return
+
+    processed = 0
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        futures = {pool.submit(_embed_one, path, skip_embeddings): (row, art_id) for row, art_id, path in jobs}
+        for future in tqdm(as_completed(futures), total=len(futures), desc="embeddings"):
+            row, art_id = futures[future]
+            record = load_record(checkpoint_dir, row, art_id)
+            try:
+                record["embeddings"] = future.result()
+                record["completed"]["embedding"] = True
+            except Exception as exc:
+                record_failure(record, failures, "embedding", repr(exc))
+            write_record(checkpoint_dir, record)
+            processed += 1
+            if processed >= checkpoint_every:
+                manifest["failures"] = failures
+                manifest["summary"] = summarize_records(checkpoint_dir)
+                write_json_atomic(manifest_path(checkpoint_dir), manifest)
+                write_failures(failure_path, failures)
+                processed = 0
+
+    manifest["failures"] = failures
+    manifest["summary"] = summarize_records(checkpoint_dir)
+    write_json_atomic(manifest_path(checkpoint_dir), manifest)
+    write_failures(failure_path, failures)
 
 
 def main() -> None:
@@ -407,6 +514,7 @@ def main() -> None:
         metadata = metadata.sample(args.sample, random_state=args.seed).reset_index(drop=True)
     if args.limit:
         metadata = metadata.head(args.limit).reset_index(drop=True)
+    rows = list(metadata.iterrows())
 
     cache_dir = Path(args.cache_dir)
     out_path = Path(args.output)
@@ -444,18 +552,27 @@ def main() -> None:
     failure_path = Path(args.failures)
     processed_since_manifest = 0
 
-    for _, row in tqdm(
-        metadata.iterrows(),
-        total=len(metadata),
-        desc="features",
-    ):
+    prefetch_images(
+        rows=rows,
+        cache_dir=cache_dir,
+        checkpoint_dir=checkpoint_dir,
+        failures=failures,
+        workers=args.download_workers,
+    )
+    manifest["failures"] = failures
+    manifest["summary"] = summarize_records(checkpoint_dir)
+    write_json_atomic(manifest_path(checkpoint_dir), manifest)
+    write_failures(failure_path, failures)
+
+    for _, row in tqdm(rows, total=len(rows), desc="local features"):
         art_id = str(row["id"])
         record = load_record(checkpoint_dir, row, art_id)
-        if is_record_complete(record):
+        local_complete = record["completed"].get("composition", False) and record["completed"].get("color", False) and record["completed"].get("pose", False)
+        if local_complete:
             continue
 
         path = image_path(cache_dir, row)
-        if not download(str(row["image_web"]), path):
+        if not path_ready(path):
             record_failure(record, failures, "download", "download failed")
             manifest["failures"] = failures
             write_record(checkpoint_dir, record)
@@ -478,6 +595,7 @@ def main() -> None:
             image_file=path,
             skip_embeddings=args.skip_embeddings,
             failures=failures,
+            include_embedding=False,
         )
         write_record(checkpoint_dir, record)
         processed_since_manifest += 1
@@ -489,6 +607,18 @@ def main() -> None:
             write_json_atomic(manifest_path(checkpoint_dir), manifest)
             write_failures(failure_path, failures)
             processed_since_manifest = 0
+
+    fill_missing_embeddings(
+        rows=rows,
+        cache_dir=cache_dir,
+        checkpoint_dir=checkpoint_dir,
+        failures=failures,
+        skip_embeddings=args.skip_embeddings,
+        workers=args.embedding_workers,
+        checkpoint_every=args.checkpoint_every,
+        manifest=manifest,
+        failure_path=failure_path,
+    )
 
     summary = summarize_records(checkpoint_dir)
     manifest["failures"] = failures
