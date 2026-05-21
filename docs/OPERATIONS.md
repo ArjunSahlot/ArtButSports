@@ -21,12 +21,27 @@ Use a small subset to verify the full pipeline before spending time and Gemini q
 
 ```bash
 uv sync
-python scripts/build_features.py --sample 100 --output data/features/artbutsports_features.npz
+python scripts/build_features.py --sample 100 --output data/features/artbutsports_features.npz --keep-checkpoint
 python scripts/setup_vm_images.py --limit 100 --manifest data/vm_images/manifest.json
 scripts/dev.sh
 ```
 
 `--skip-embeddings` exists only for debugging local feature extraction. Do not use it for acceptance or production because it makes embedding scores meaningless.
+
+## Resumable Feature Builds
+
+`scripts/build_features.py` writes per-artwork checkpoint records under `<output_stem>_checkpoint/records/` by default. Each record tracks completion separately for `embedding`, `composition`, `color`, and `pose`.
+
+If the process crashes, rerun the same command. The script validates that the checkpoint config matches the current flags, skips completed feature groups, and retries only holes. If one feature fails for an artwork, the other successful features are still saved and the record remains incomplete until a later run fills the missing group.
+
+Useful flags:
+
+- `--checkpoint-dir PATH`: put checkpoint records somewhere explicit.
+- `--checkpoint-every N`: update manifest/failure summaries every N processed artworks.
+- `--keep-checkpoint`: keep complete checkpoint records after a successful build.
+- `--fresh`: delete the checkpoint and start over. Use this only when you intentionally want to discard saved work.
+
+The final `.npz` includes complete rows only and stores `incomplete_summary` so operators can see whether any rows were left out. If incomplete records remain, the checkpoint is kept even without `--keep-checkpoint`.
 
 ## Full Local Build
 
@@ -75,4 +90,3 @@ NEXT_PUBLIC_API_BASE_URL=https://your-vm-api-origin
 ```
 
 Set the backend `FRONTEND_ORIGIN` to the exact Vercel origin.
-

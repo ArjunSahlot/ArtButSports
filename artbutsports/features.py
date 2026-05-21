@@ -20,6 +20,62 @@ EDGE_BINS = 12
 LAB_BINS = 32
 PALETTE_BINS = (4, 4, 4)
 POSE_MODEL_PATH = os.getenv("POSE_MODEL_PATH", "yolo26n-pose.pt")
+_INFERENCE_DEVICE: str | None = None
+
+
+def configure_inference_device(device: str | None = None) -> str:
+    """Select torch/ultralytics device. Defaults to CPU; set ``ARTBUTSPORTS_DEVICE=cuda`` for GPU."""
+    global _INFERENCE_DEVICE
+    import torch
+
+    requested = device if device is not None else os.getenv("ARTBUTSPORTS_DEVICE")
+    if not requested:
+        resolved = "cpu"
+    elif requested.strip().lower() == "auto":
+        resolved = "cuda" if torch.cuda.is_available() else "cpu"
+    elif requested.strip().lower() in {"cuda", "gpu"}:
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA was requested but torch.cuda.is_available() is False")
+        resolved = "cuda"
+    elif requested.strip().lower() == "cpu":
+        resolved = "cpu"
+    elif requested.strip().lower().startswith("cuda"):
+        if not torch.cuda.is_available():
+            raise RuntimeError(f"Device {requested!r} was requested but CUDA is not available")
+        resolved = requested.strip().lower()
+    else:
+        resolved = requested.strip().lower()
+
+    _INFERENCE_DEVICE = resolved
+    if resolved != "cpu" and torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = True
+    return resolved
+
+
+def inference_device() -> str:
+    if _INFERENCE_DEVICE is None:
+        configure_inference_device()
+    return _INFERENCE_DEVICE
+
+
+def inference_device_info() -> dict[str, Any]:
+    import torch
+
+    device = inference_device()
+    info: dict[str, Any] = {
+        "device": device,
+        "cuda_available": torch.cuda.is_available(),
+    }
+    if device != "cpu" and torch.cuda.is_available():
+        info["gpu_name"] = torch.cuda.get_device_name(0)
+        info["gpu_count"] = torch.cuda.device_count()
+    return info
+
+
+def warmup_inference_models() -> None:
+    """Load GPU models once before a long batch job."""
+    get_composition_model()
+    get_pose_model()
 
 
 def read_image_bytes(data: bytes) -> np.ndarray:
@@ -177,6 +233,7 @@ class CompositionModel:
     model: Any
     cam: Any
     target_layers: Any
+    device: str
     ok: bool
 
 
@@ -187,11 +244,18 @@ def get_composition_model() -> CompositionModel:
         from pytorch_grad_cam import EigenCAM
         from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
 
-        model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT).eval()
+        device = inference_device()
+        model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT).eval().to(device)
         target_layers = [model.features[-1]]
-        return CompositionModel(model=model, cam=EigenCAM(model=model, target_layers=target_layers), target_layers=target_layers, ok=True)
+        return CompositionModel(
+            model=model,
+            cam=EigenCAM(model=model, target_layers=target_layers),
+            target_layers=target_layers,
+            device=device,
+            ok=True,
+        )
     except Exception:
-        return CompositionModel(model=None, cam=None, target_layers=None, ok=False)
+        return CompositionModel(model=None, cam=None, target_layers=None, device="cpu", ok=False)
 
 
 def extract_saliency(image_bgr: np.ndarray) -> np.ndarray:
@@ -206,11 +270,13 @@ def extract_saliency(image_bgr: np.ndarray) -> np.ndarray:
         tensor = Compose([
             ToTensor(),
             Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])(rgb).unsqueeze(0)
+        ])(rgb).unsqueeze(0).to(cm.device)
         with torch.no_grad():
             _ = cm.model(tensor)
         cam = cm.cam(input_tensor=tensor, targets=None)[0]
-        cam = cv2.resize(cam.astype(np.float32), (SALIENCY_GRID, SALIENCY_GRID), interpolation=cv2.INTER_AREA)
+        if hasattr(cam, "detach"):
+            cam = cam.detach().cpu().numpy()
+        cam = cv2.resize(np.asarray(cam, dtype=np.float32), (SALIENCY_GRID, SALIENCY_GRID), interpolation=cv2.INTER_AREA)
         cam = np.clip(cam, 0, None)
         return (cam / (cam.sum() + 1e-9)).ravel().astype(np.float32)
     except Exception:
@@ -235,7 +301,11 @@ POSE_ANGLE_TRIPLES = [
 def get_pose_model() -> Any:
     from ultralytics import YOLO
 
-    return YOLO(POSE_MODEL_PATH)
+    model = YOLO(POSE_MODEL_PATH)
+    device = inference_device()
+    if device != "cpu":
+        model.to(device)
+    return model
 
 
 def _angle(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> float:
@@ -261,7 +331,7 @@ def pose_angles_from_keypoints(kpts: np.ndarray, conf: np.ndarray, min_conf: flo
 def extract_pose(image_bgr: np.ndarray) -> dict[str, Any]:
     try:
         model = get_pose_model()
-        results = model.predict([image_bgr], verbose=False, imgsz=640, conf=0.25)
+        results = model.predict([image_bgr], verbose=False, imgsz=640, conf=0.25, device=inference_device())
         result = results[0]
         descriptors = []
         keypoints = []
