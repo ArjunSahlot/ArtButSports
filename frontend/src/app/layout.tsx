@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <nav className="sticky top-0 z-40 border-b border-line/80 bg-ink/85 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
             <Link href="/query" className="text-sm font-semibold tracking-wide">
