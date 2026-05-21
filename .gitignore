@@ -3,3 +3,4 @@ yolo*
 .env*
 .vscode*
 .cache*
+.venv*
