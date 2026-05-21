@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Annotated, Any
@@ -13,7 +14,16 @@ from fastapi.responses import FileResponse
 from artbutsports.features import embed_image_bytes_async, encode_png_data_url, read_image_bytes, read_image_path, visualize_step
 from artbutsports.scoring import DEFAULT_WEIGHTS, FeatureStore, load_feature_store, query_feature_blocks, score_query
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(PROJECT_ROOT / ".env")
+
+logger = logging.getLogger(__name__)
+
+
+def resolve_data_path(path: str) -> Path:
+    candidate = Path(path)
+    return candidate if candidate.is_absolute() else PROJECT_ROOT / candidate
+
 
 FEATURE_TABLE_PATH = os.getenv("FEATURE_TABLE_PATH", "data/features/artbutsports_features.npz")
 IMAGE_MANIFEST_PATH = os.getenv("IMAGE_MANIFEST_PATH", "data/vm_images/manifest.json")
@@ -36,10 +46,18 @@ IMAGE_MANIFEST: dict[str, str] = {}
 @app.on_event("startup")
 def startup() -> None:
     global STORE, IMAGE_MANIFEST
-    if Path(FEATURE_TABLE_PATH).exists():
-        STORE = load_feature_store(FEATURE_TABLE_PATH)
-    if Path(IMAGE_MANIFEST_PATH).exists():
-        IMAGE_MANIFEST = json.loads(Path(IMAGE_MANIFEST_PATH).read_text())
+    feature_path = resolve_data_path(FEATURE_TABLE_PATH)
+    if feature_path.exists():
+        STORE = load_feature_store(str(feature_path))
+        logger.info("Loaded feature table from %s (%d items)", feature_path, len(STORE.ids))
+    else:
+        logger.warning("Feature table not found at %s", feature_path)
+    manifest_path = resolve_data_path(IMAGE_MANIFEST_PATH)
+    if manifest_path.exists():
+        IMAGE_MANIFEST = json.loads(manifest_path.read_text())
+        logger.info("Loaded image manifest from %s (%d images)", manifest_path, len(IMAGE_MANIFEST))
+    else:
+        logger.warning("Image manifest not found at %s", manifest_path)
 
 
 @app.get("/health")
