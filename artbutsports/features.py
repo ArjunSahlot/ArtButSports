@@ -63,7 +63,7 @@ def _image_part_from_bytes(image_bytes: bytes, mime_type: str) -> types.Part:
 
 
 def embed_image_bytes(image_bytes: bytes, mime_type: str = "image/jpeg") -> np.ndarray:
-    client = genai.Client()
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
     response = client.models.embed_content(
         model=EMBED_MODEL,
         contents=[_image_part_from_bytes(image_bytes, mime_type)],
@@ -72,7 +72,7 @@ def embed_image_bytes(image_bytes: bytes, mime_type: str = "image/jpeg") -> np.n
 
 
 async def embed_image_bytes_async(image_bytes: bytes, mime_type: str = "image/jpeg") -> np.ndarray:
-    client = genai.Client()
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
     response = await client.aio.models.embed_content(
         model=EMBED_MODEL,
         contents=[_image_part_from_bytes(image_bytes, mime_type)],
@@ -273,7 +273,7 @@ def extract_pose(image_bgr: np.ndarray) -> dict[str, Any]:
                 if np.isfinite(angles).sum() >= 4:
                     descriptors.append(np.nan_to_num(angles, nan=-1.0))
                     keypoints.append(person_xy.astype(np.float32))
-        desc = np.asarray(descriptors, dtype=np.float32)
+        desc = np.asarray(descriptors, dtype=np.float32).reshape((-1, len(POSE_ANGLE_TRIPLES)))
         return {"has_pose": len(desc) > 0, "pose": desc, "keypoints": keypoints, "result": result if "result" in locals() else None}
     except Exception:
         return {"has_pose": False, "pose": np.zeros((0, len(POSE_ANGLE_TRIPLES)), dtype=np.float32), "keypoints": [], "result": None}

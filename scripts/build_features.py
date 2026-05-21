@@ -146,8 +146,14 @@ def main() -> None:
         except Exception as exc:
             failures.append({"id": art_id, "stage": "features", "error": repr(exc)})
 
+    failure_path = Path(args.failures)
+    failure_path.parent.mkdir(parents=True, exist_ok=True)
     if not ids:
-        raise SystemExit("No feature rows were built.")
+        with failure_path.open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["id", "stage", "error"])
+            writer.writeheader()
+            writer.writerows(failures)
+        raise SystemExit(f"No feature rows were built. See {failure_path}.")
 
     arrays = {
         "embeddings": np.vstack(embeddings).astype(np.float32),
@@ -169,7 +175,7 @@ def main() -> None:
         calibration=np.asarray(calibration, dtype=object),
         **arrays,
     )
-    with Path(args.failures).open("w", newline="") as f:
+    with failure_path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "stage", "error"])
         writer.writeheader()
         writer.writerows(failures)
@@ -178,4 +184,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
