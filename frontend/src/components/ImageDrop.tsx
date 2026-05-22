@@ -13,10 +13,16 @@ function formatSize(bytes: number) {
 
 export function ImageDrop({
   file,
+  previewUrl,
+  previewName,
+  previewSize,
   onFile,
   onClear
 }: {
   file: File | null;
+  previewUrl?: string | null;
+  previewName?: string;
+  previewSize?: number;
   onFile: (file: File) => void;
   onClear: () => void;
 }) {
@@ -41,13 +47,13 @@ export function ImageDrop({
 
   useEffect(() => {
     if (!file) {
-      setPreview(null);
+      setPreview(previewUrl ?? null);
       return;
     }
     const url = URL.createObjectURL(file);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
-  }, [file]);
+  }, [file, previewUrl]);
 
   useEffect(() => {
     function onPaste(event: ClipboardEvent) {
@@ -101,7 +107,7 @@ export function ImageDrop({
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/55 via-transparent to-transparent" />
             <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
               <span className="truncate rounded-md bg-ink/80 px-2.5 py-1 font-mono text-[11px] text-fg-muted backdrop-blur">
-                {file?.name} · {file ? formatSize(file.size) : ""}
+                {previewName ?? file?.name} {file || previewSize ? `· ${formatSize(previewSize ?? file?.size ?? 0)}` : ""}
               </span>
               <div className="flex gap-1.5">
                 <button

@@ -104,6 +104,45 @@ def encode_png_data_url(image_bgr_or_rgb: np.ndarray, rgb: bool = False) -> str:
     return "data:image/png;base64," + base64.b64encode(encoded.tobytes()).decode("ascii")
 
 
+def encode_svg_data_url(svg: str) -> str:
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
+def embedding_vector_svg() -> str:
+    svg = """<svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Embedding vector">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111114"/>
+      <stop offset="100%" stop-color="#050506"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e7a94e"/>
+      <stop offset="100%" stop-color="#f2c178"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#e7a94e" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="320" height="320" rx="28" fill="url(#bg)"/>
+  <circle cx="258" cy="62" r="42" fill="#e7a94e" opacity="0.08"/>
+  <rect x="72" y="48" width="176" height="224" rx="22" fill="#151519" stroke="#2a2a31"/>
+  <path d="M112 82H92V238H112" fill="none" stroke="#f4f4f3" stroke-opacity="0.72" stroke-width="4" stroke-linecap="round"/>
+  <path d="M208 82H228V238H208" fill="none" stroke="#f4f4f3" stroke-opacity="0.72" stroke-width="4" stroke-linecap="round"/>
+  <g filter="url(#glow)">
+    <rect x="125" y="78" width="70" height="32" rx="10" fill="#e7a94e" fill-opacity="0.16" stroke="#e7a94e" stroke-opacity="0.35"/>
+    <rect x="125" y="122" width="70" height="32" rx="10" fill="#f2c178" fill-opacity="0.13" stroke="#f2c178" stroke-opacity="0.28"/>
+    <rect x="125" y="210" width="70" height="32" rx="10" fill="#e7a94e" fill-opacity="0.16" stroke="#e7a94e" stroke-opacity="0.35"/>
+  </g>
+  <rect x="125" y="166" width="70" height="32" rx="10" fill="#222229"/>
+  <text x="160" y="100" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">0.73</text>
+  <text x="160" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">-1.24</text>
+  <text x="160" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#8b8b95">⋮</text>
+  <text x="160" y="232" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">0.18</text>
+  <path d="M68 286C112 266 144 294 184 276C218 261 238 269 260 252" fill="none" stroke="url(#line)" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+</svg>"""
+    return encode_svg_data_url(svg)
+
+
 def l2_normalize(v: np.ndarray) -> np.ndarray:
     v = np.asarray(v, dtype=np.float32)
     return v / (np.linalg.norm(v) + 1e-9)
@@ -394,7 +433,8 @@ def visualize_step(image_bgr: np.ndarray, step: str) -> dict[str, Any]:
             return {"images": {"pose": encode_png_data_url(plotted)}, "has_pose": bool(pose["has_pose"])}
         return {"images": {"pose": encode_png_data_url(image_bgr)}, "has_pose": False}
     if step == "embeddings":
-        # The embedding itself is numeric and not useful to render. Show a deterministic projection strip.
-        small = cv2.resize(image_bgr, (96, 96), interpolation=cv2.INTER_AREA)
-        return {"images": {"embedding_input": encode_png_data_url(small)}, "description": "Gemini embedding vector generated for this image."}
+        return {
+            "images": {"embedding": embedding_vector_svg()},
+            "description": "The image is represented as a normalized Gemini embedding vector for semantic comparison.",
+        }
     raise ValueError(f"Unknown visualize step: {step}")

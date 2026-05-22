@@ -1,11 +1,10 @@
 "use client";
 
-import * as Dialog from "@radix-ui/react-dialog";
 import { Brain, Frame, Palette, PersonStanding, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
 import type { LucideIcon } from "lucide-react";
 import { defaultWeights, type WeightPayload } from "@/lib/api";
 import { Slider } from "./Slider";
-import { Toggle } from "./Toggle";
 
 type Source = {
   key: string;
@@ -32,17 +31,18 @@ export function Weights({
   onChange: (next: WeightPayload) => void;
 }) {
   function setSource(name: string, weight: number) {
-    onChange({ ...value, sources: { ...value.sources, [name]: weight } });
-  }
-  function setEnabled(name: string, enabled: boolean) {
-    onChange({ ...value, enabled: { ...value.enabled, [name]: enabled } });
+    onChange({
+      ...value,
+      sources: { ...value.sources, [name]: weight },
+      enabled: { ...value.enabled, [name]: true }
+    });
   }
   function setNested(group: "color" | "composition", name: string, weight: number) {
     onChange({ ...value, [group]: { ...value[group], [name]: weight } });
   }
 
   const activeTotal = sources.reduce(
-    (sum, s) => sum + (value.enabled[s.key] ? value.sources[s.key] : 0),
+    (sum, s) => sum + value.sources[s.key],
     0
   );
   const isDefault = JSON.stringify(value) === JSON.stringify(defaultWeights);
@@ -71,54 +71,36 @@ export function Weights({
 
       <div className="grid gap-2.5 sm:grid-cols-2">
         {sources.map((source) => {
-          const enabled = value.enabled[source.key];
           const weight = value.sources[source.key];
-          const share = enabled && activeTotal > 0 ? (weight / activeTotal) * 100 : 0;
+          const share = activeTotal > 0 ? (weight / activeTotal) * 100 : 0;
           const Icon = source.icon;
           return (
             <div
               key={source.key}
-              className={`rounded-xl border p-3.5 transition-colors ${
-                enabled ? "border-line bg-elevated/60" : "border-line/60 bg-panel"
-              }`}
+              className="rounded-xl border border-line bg-elevated/60 p-3.5 transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
-                      enabled
-                        ? "border-accent-deep/50 bg-accent/10 text-accent"
-                        : "border-line text-fg-dim"
-                    }`}
-                  >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent-deep/50 bg-accent/10 text-accent transition-colors">
                     <Icon size={15} />
                   </div>
                   <div>
-                    <p className={`text-[13px] font-medium ${enabled ? "text-fg" : "text-fg-dim"}`}>
-                      {source.label}
-                    </p>
+                    <p className="text-[13px] font-medium text-fg">{source.label}</p>
                     <p className="text-[11px] text-fg-muted">{source.blurb}</p>
                   </div>
                 </div>
-                <Toggle
-                  checked={enabled}
-                  onChange={(checked) => setEnabled(source.key, checked)}
-                  label={`Toggle ${source.label}`}
-                />
+                <span className="rounded-md border border-line bg-panel px-2 py-1 font-mono text-[11px] text-fg-muted">
+                  {weight <= 0 ? "0%" : `${share.toFixed(0)}%`}
+                </span>
               </div>
               <div className="mt-3 flex items-center gap-3">
                 <Slider
                   value={weight}
                   onChange={(n) => setSource(source.key, n)}
-                  disabled={!enabled}
                   aria-label={`${source.label} weight`}
                 />
-                <span
-                  className={`w-10 shrink-0 text-right font-mono text-[12px] tabular-nums ${
-                    enabled ? "text-fg" : "text-fg-dim"
-                  }`}
-                >
-                  {enabled ? `${share.toFixed(0)}%` : "off"}
+                <span className="w-10 shrink-0 text-right font-mono text-[12px] tabular-nums text-fg">
+                  {weight.toFixed(2)}
                 </span>
               </div>
             </div>

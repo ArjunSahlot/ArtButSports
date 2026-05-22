@@ -42,7 +42,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
               .
             </p>
-            <p>Uploaded images are processed in memory and never stored.</p>
+            <p>
+              Built by{" "}
+              <a
+                href="https://github.com/ArjunSahlot"
+                target="_blank"
+                rel="noreferrer"
+                className="text-fg-muted underline decoration-line-strong underline-offset-2 transition-colors hover:text-fg"
+              >
+                Arjun Sahlot
+              </a>
+              . Uploaded images are processed in memory and never stored.
+            </p>
           </div>
         </footer>
       </body>

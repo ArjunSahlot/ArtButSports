@@ -133,7 +133,33 @@ function VisualPanel({ src, label, error }: { src?: string; label: string; error
   );
 }
 
+function ModalPanel({
+  src,
+  label,
+  loading = false
+}: {
+  src?: string | null;
+  label: string;
+  loading?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line bg-ink/60">
+        {src ? (
+          <img src={src} alt={label} className="h-full w-full object-contain" />
+        ) : loading ? (
+          <div className="h-full w-full animate-pulse bg-elevated" />
+        ) : (
+          <span className="text-[12px] text-fg-dim">Waiting</span>
+        )}
+      </div>
+      <p className="text-center text-[11px] uppercase tracking-wide text-fg-dim">{label}</p>
+    </div>
+  );
+}
+
 function TryModal({ step, title }: { step: string; title: string }) {
+  const [before, setBefore] = useState<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
   const [json, setJson] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -146,6 +172,11 @@ function TryModal({ step, title }: { step: string; title: string }) {
     setError(null);
     setImage(null);
     setJson("");
+    const preview = URL.createObjectURL(file);
+    setBefore((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return preview;
+    });
     try {
       const data = await visualizeStep(file, step);
       const first = data.images ? (Object.values(data.images)[0] as string) : null;
@@ -162,6 +193,10 @@ function TryModal({ step, title }: { step: string; title: string }) {
     <Dialog.Root
       onOpenChange={(open) => {
         if (!open) {
+          setBefore((previous) => {
+            if (previous) URL.revokeObjectURL(previous);
+            return null;
+          });
           setImage(null);
           setJson("");
           setError(null);
@@ -217,12 +252,12 @@ function TryModal({ step, title }: { step: string; title: string }) {
             </p>
           )}
 
-          {image && (
-            <img
-              src={image}
-              alt={`${title} output`}
-              className="mt-5 max-h-[420px] w-full rounded-lg border border-line object-contain"
-            />
+          {(before || image) && (
+            <div className="mt-5 grid items-start gap-4 sm:grid-cols-[1fr_auto_1fr]">
+              <ModalPanel src={before} label="Before" />
+              <ArrowRight size={18} className="mx-auto mt-[34%] hidden text-fg-dim sm:block" />
+              <ModalPanel src={image} label="After" loading={busy} />
+            </div>
           )}
           {json && (
             <pre className="mt-3 overflow-auto rounded-lg border border-line bg-ink/70 p-4 font-mono text-[12px] leading-relaxed text-fg-muted">

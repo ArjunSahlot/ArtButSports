@@ -27,6 +27,7 @@ def resolve_data_path(path: str) -> Path:
 
 FEATURE_TABLE_PATH = os.getenv("FEATURE_TABLE_PATH", "data/features/artbutsports_features.npz")
 IMAGE_MANIFEST_PATH = os.getenv("IMAGE_MANIFEST_PATH", "data/vm_images/manifest.json")
+DEMO_IMAGE_DIR = os.getenv("DEMO_IMAGE_DIR", "data/demos")
 LOCALHOST_ORIGIN = "http://localhost:3000"
 PRODUCTION_ORIGIN = os.getenv("FRONTEND_ORIGIN", "")
 
@@ -78,6 +79,30 @@ def image(art_id: str) -> FileResponse:
     return FileResponse(path, media_type="image/jpeg")
 
 
+@app.get("/demos")
+def demos() -> dict[str, Any]:
+    demo_dir = resolve_data_path(DEMO_IMAGE_DIR)
+    if not demo_dir.exists():
+        return {"items": []}
+    items = []
+    for path in sorted(demo_dir.iterdir()):
+        if path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+            continue
+        name = path.stem.replace("_", " ").replace("-", " ").title()
+        items.append({"name": name, "filename": path.name, "url": f"/demos/{path.name}"})
+    return {"items": items}
+
+
+@app.get("/demos/{filename}")
+def demo_image(filename: str) -> FileResponse:
+    demo_dir = resolve_data_path(DEMO_IMAGE_DIR)
+    path = (demo_dir / filename).resolve()
+    if demo_dir.resolve() not in path.parents or not path.exists() or path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise HTTPException(status_code=404, detail="Demo image not found")
+    media_type = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+    return FileResponse(path, media_type=media_type)
+
+
 @app.post("/query")
 async def query(
     image: Annotated[UploadFile, File()],
@@ -85,12 +110,37 @@ async def query(
     offset: Annotated[int, Form()] = 0,
     limit: Annotated[int, Form()] = 30,
 ) -> dict[str, Any]:
+    data = await image.read()
+    return await run_query_bytes(data, image.content_type or "image/jpeg", weights, offset, limit)
+
+
+@app.post("/query/demo")
+async def query_demo(
+    filename: Annotated[str, Form()],
+    weights: Annotated[str | None, Form()] = None,
+    offset: Annotated[int, Form()] = 0,
+    limit: Annotated[int, Form()] = 30,
+) -> dict[str, Any]:
+    demo_dir = resolve_data_path(DEMO_IMAGE_DIR)
+    path = (demo_dir / filename).resolve()
+    if demo_dir.resolve() not in path.parents or not path.exists() or path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise HTTPException(status_code=404, detail="Demo image not found")
+    mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+    return await run_query_bytes(path.read_bytes(), mime, weights, offset, limit)
+
+
+async def run_query_bytes(
+    data: bytes,
+    mime_type: str,
+    weights: str | None,
+    offset: int,
+    limit: int,
+) -> dict[str, Any]:
     if STORE is None:
         raise HTTPException(status_code=503, detail="Feature table is not loaded")
-    data = await image.read()
     image_bgr = read_image_bytes(data)
     try:
-        embedding = await embed_image_bytes_async(data, image.content_type or "image/jpeg")
+        embedding = await embed_image_bytes_async(data, mime_type)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}") from exc
     weight_payload = json.loads(weights) if weights else None
@@ -136,11 +186,7 @@ async def visualize(
     data = await image.read()
     image_bgr = read_image_bytes(data)
     if step == "embeddings":
-        try:
-            embedding = await embed_image_bytes_async(data, image.content_type or "image/jpeg")
-            return {"step": step, "dimensions": int(embedding.shape[0]), **visualize_step(image_bgr, step)}
-        except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}") from exc
+        return {"step": step, "dimensions": 3072, **visualize_step(image_bgr, step)}
     return {"step": step, **visualize_step(image_bgr, step)}
 
 
@@ -152,10 +198,5 @@ async def visualize_sample(step: str) -> dict[str, Any]:
     image_bgr = read_image_path(path)
     payload = {"sample_id": art_id, "before": encode_png_data_url(image_bgr), "step": step}
     if step == "embeddings":
-        data = Path(path).read_bytes()
-        try:
-            embedding = await embed_image_bytes_async(data, "image/jpeg")
-            return {**payload, "dimensions": int(embedding.shape[0]), **visualize_step(image_bgr, step)}
-        except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}") from exc
+        return {**payload, "dimensions": 3072, **visualize_step(image_bgr, step)}
     return {**payload, **visualize_step(image_bgr, step)}

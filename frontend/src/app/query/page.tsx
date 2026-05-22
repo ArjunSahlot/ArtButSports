@@ -5,12 +5,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageDrop } from "@/components/ImageDrop";
 import { ResultCard } from "@/components/ResultCard";
 import { Weights } from "@/components/Weights";
-import { defaultWeights, queryArt, type ArtResult, type WeightPayload } from "@/lib/api";
+import {
+  absoluteImageUrl,
+  defaultWeights,
+  listDemos,
+  queryArt,
+  queryDemo,
+  type ArtResult,
+  type DemoImage,
+  type WeightPayload
+} from "@/lib/api";
 
 const PAGE_SIZE = 28;
 
 export default function QueryPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [selectedDemo, setSelectedDemo] = useState<DemoImage | null>(null);
   const [weights, setWeights] = useState<WeightPayload>(defaultWeights);
   const [items, setItems] = useState<ArtResult[]>([]);
   const [offset, setOffset] = useState(0);
@@ -18,6 +28,8 @@ export default function QueryPage() {
   const [loading, setLoading] = useState(false);
   const [paging, setPaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demos, setDemos] = useState<DemoImage[]>([]);
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const reqId = useRef(0);
 
@@ -29,7 +41,9 @@ export default function QueryPage() {
       else setPaging(true);
       setError(null);
       try {
-        const data = await queryArt(file, weights, nextOffset, PAGE_SIZE);
+        const data = selectedDemo
+          ? await queryDemo(selectedDemo.filename, weights, nextOffset, PAGE_SIZE)
+          : await queryArt(file, weights, nextOffset, PAGE_SIZE);
         if (id !== reqId.current) return;
         setItems((prev) => (replace ? data.items : [...prev, ...data.items]));
         setOffset(data.next_offset);
@@ -44,7 +58,7 @@ export default function QueryPage() {
         }
       }
     },
-    [file, weights]
+    [file, selectedDemo, weights]
   );
 
   // New file → query immediately.
@@ -56,7 +70,7 @@ export default function QueryPage() {
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file]);
+  }, [file, selectedDemo]);
 
   // Weight changes → debounced re-query.
   useEffect(() => {
@@ -93,6 +107,20 @@ export default function QueryPage() {
   const hasResults = items.length > 0;
   const exhausted = hasResults && items.length >= total && !paging;
 
+  useEffect(() => {
+    listDemos()
+      .then(setDemos)
+      .catch(() => setDemos([]));
+  }, []);
+
+  async function chooseDemo(demo: DemoImage) {
+    setDemoLoading(demo.filename);
+    setError(null);
+    setSelectedDemo(demo);
+    setFile(new File(["demo"], demo.filename, { type: "image/png" }));
+    setDemoLoading(null);
+  }
+
   return (
     <main className="mx-auto max-w-7xl px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
       {/* Hero */}
@@ -115,7 +143,19 @@ export default function QueryPage() {
 
       {/* Controls */}
       <section className="mx-auto mt-10 max-w-5xl space-y-3">
-        <ImageDrop file={file} onFile={setFile} onClear={() => setFile(null)} />
+        <ImageDrop
+          file={selectedDemo ? null : file}
+          previewUrl={selectedDemo ? absoluteImageUrl(selectedDemo.url) : null}
+          previewName={selectedDemo?.name}
+          onFile={(next) => {
+            setSelectedDemo(null);
+            setFile(next);
+          }}
+          onClear={() => {
+            setSelectedDemo(null);
+            setFile(null);
+          }}
+        />
         <Weights value={weights} onChange={setWeights} />
       </section>
 
@@ -140,9 +180,11 @@ export default function QueryPage() {
       )}
 
       {/* States */}
-      {!file && !error && <HowItWorks />}
+      {!file && !error && (
+        <DemoGallery demos={demos} loading={demoLoading} onPick={chooseDemo} />
+      )}
 
-      {file && loading && <SkeletonGrid />}
+      {file && loading && <QueryLoading />}
 
       {file && !loading && hasResults && (
         <>
@@ -188,55 +230,112 @@ export default function QueryPage() {
   );
 }
 
-function HowItWorks() {
-  const steps = [
-    {
-      n: "01",
-      title: "Upload anything",
-      copy: "A photo, a meme, a screenshot. It's analyzed in memory and never stored."
-    },
-    {
-      n: "02",
-      title: "Four signals score it",
-      copy: "Semantics, composition, color, and human pose each rank the collection."
-    },
-    {
-      n: "03",
-      title: "Tune & explore",
-      copy: "Reweight any signal live and watch the matches re-rank instantly."
-    }
-  ];
+function DemoGallery({
+  demos,
+  loading,
+  onPick
+}: {
+  demos: DemoImage[];
+  loading: string | null;
+  onPick: (demo: DemoImage) => void;
+}) {
   return (
-    <section className="mx-auto mt-16 grid max-w-5xl gap-3 sm:grid-cols-3">
-      {steps.map((step) => (
-        <div key={step.n} className="rounded-xl border border-line bg-panel p-5">
-          <span className="font-mono text-[12px] text-accent">{step.n}</span>
-          <h3 className="mt-2 text-[15px] font-medium text-fg">{step.title}</h3>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-fg-muted">{step.copy}</p>
+    <section className="mx-auto mt-12 max-w-6xl">
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-fg">Try a demo image</h2>
+          <p className="mt-1 text-[13px] text-fg-muted">
+            Pick one of these ready-made sports references, or upload your own above.
+          </p>
         </div>
-      ))}
+      </div>
+      <div className="masonry">
+        {demos.map((demo) => (
+          <button
+            key={demo.filename}
+            type="button"
+            onClick={() => onPick(demo)}
+            className="masonry-item group w-full overflow-hidden rounded-xl border border-line bg-panel text-left transition-all hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift"
+          >
+            <div className="relative">
+              <img
+                src={absoluteImageUrl(demo.url)}
+                alt={demo.name}
+                className="w-full object-cover transition duration-300 group-hover:scale-[1.025]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent opacity-80" />
+              {loading === demo.filename && (
+                <div className="absolute inset-0 flex items-center justify-center bg-ink/60">
+                  <Loader2 size={20} className="animate-spin-slow text-accent" />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-3 p-3.5">
+              <span className="text-[13px] font-medium text-fg">{demo.name}</span>
+              <span className="text-[12px] text-fg-muted">Analyze</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      {demos.length === 0 && (
+        <div className="rounded-xl border border-line bg-panel p-5 text-[13px] text-fg-muted">
+          Demo images are unavailable. Add images to <span className="font-mono">data/demos</span>.
+        </div>
+      )}
     </section>
   );
 }
 
-function SkeletonGrid() {
-  const heights = [320, 240, 380, 280, 340, 260, 300, 360, 230, 320, 270, 350];
+function QueryLoading() {
+  const steps = [
+    "Embedding query image",
+    "Reading composition",
+    "Extracting color",
+    "Checking pose",
+    "Ranking the collection"
+  ];
+  const [active, setActive] = useState(0);
+  const pct = Math.min(96, 12 + active * 20);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActive((current) => Math.min(steps.length - 1, current + 1));
+    }, 850);
+    return () => window.clearInterval(timer);
+  }, [steps.length]);
+
   return (
-    <section className="masonry mt-12">
-      {heights.map((h, i) => (
-        <div key={i} className="masonry-item">
-          <div className="overflow-hidden rounded-xl border border-line bg-panel">
-            <div
-              className="animate-pulse bg-elevated"
-              style={{ height: h }}
-            />
-            <div className="space-y-2 p-3.5">
-              <div className="h-3 w-3/4 animate-pulse rounded bg-elevated" />
-              <div className="h-2.5 w-1/2 animate-pulse rounded bg-elevated" />
-            </div>
-          </div>
+    <section className="mx-auto mt-12 max-w-3xl rounded-xl2 border border-line bg-panel p-6 shadow-lift">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent-deep/50 bg-accent/10 text-accent">
+          <Loader2 size={19} className="animate-spin-slow" />
         </div>
-      ))}
+        <div>
+          <p className="text-sm font-semibold text-fg">Searching the collection</p>
+          <p className="mt-0.5 text-[13px] text-fg-muted">{steps[active]}</p>
+        </div>
+        <span className="ml-auto font-mono text-[12px] text-fg-muted">{pct}%</span>
+      </div>
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-elevated">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-accent to-accent-bright transition-all duration-700"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-5">
+        {steps.map((step, index) => (
+          <div
+            key={step}
+            className={`rounded-lg border px-2.5 py-2 text-[11px] ${
+              index <= active
+                ? "border-accent-deep/50 bg-accent/10 text-fg"
+                : "border-line bg-elevated/40 text-fg-dim"
+            }`}
+          >
+            {step}
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
