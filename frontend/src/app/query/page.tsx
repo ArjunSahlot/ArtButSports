@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageDrop } from "@/components/ImageDrop";
 import { ResultCard } from "@/components/ResultCard";
 import { Weights } from "@/components/Weights";
+import { useMasonrySpan } from "@/components/useMasonrySpan";
 import {
   defaultWeights,
   queryArt,
@@ -249,34 +250,56 @@ function DemoGallery({
       </div>
       <div className="masonry">
         {demos.map((demo) => (
-          <button
+          <DemoCard
             key={demo.filename}
-            type="button"
-            onClick={() => onPick(demo)}
-            className="masonry-item group w-full overflow-hidden rounded-xl border border-line bg-panel text-left transition-all hover:-translate-y-0.5 hover:border-neonTeal/50 hover:shadow-glow"
-          >
-            <div className="relative">
-              <img
-                src={demo.url}
-                alt={demo.name}
-                className="w-full object-cover transition duration-300 group-hover:scale-[1.025]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent opacity-90" />
-              <div className="absolute left-3 top-3 h-8 w-8 rounded-full border border-neonOrange/60 bg-neonOrange/15 shadow-[0_0_18px_rgba(255,138,0,0.22)]" />
-              {loading === demo.filename && (
-                <div className="absolute inset-0 flex items-center justify-center bg-ink/60">
-                  <Loader2 size={20} className="animate-spin-slow text-accent" />
-                </div>
-              )}
-            </div>
-            <div className="flex items-center justify-between gap-3 p-3.5">
-              <span className="text-[13px] font-medium text-fg">{demo.name}</span>
-              <span className="rounded-md border border-neonBlue/40 bg-neonBlue/10 px-2 py-1 text-[11px] text-fg-muted">Analyze</span>
-            </div>
-          </button>
+            demo={demo}
+            loading={loading === demo.filename}
+            onPick={onPick}
+          />
         ))}
       </div>
     </section>
+  );
+}
+
+function DemoCard({
+  demo,
+  loading,
+  onPick
+}: {
+  demo: DemoImage;
+  loading: boolean;
+  onPick: (demo: DemoImage) => void;
+}) {
+  const cardRef = useRef<HTMLButtonElement>(null);
+  useMasonrySpan(cardRef);
+
+  return (
+    <button
+      ref={cardRef}
+      type="button"
+      onClick={() => onPick(demo)}
+      className="masonry-item group w-full overflow-hidden rounded-xl border border-line bg-panel text-left transition-all hover:-translate-y-0.5 hover:border-neonTeal/50 hover:shadow-glow"
+    >
+      <div className="relative">
+        <img
+          src={demo.url}
+          alt={demo.name}
+          className="w-full object-cover transition duration-300 group-hover:scale-[1.025]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent opacity-90" />
+        <div className="absolute left-3 top-3 h-8 w-8 rounded-full border border-neonOrange/60 bg-neonOrange/15 shadow-[0_0_18px_rgba(255,138,0,0.22)]" />
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-ink/60">
+            <Loader2 size={20} className="animate-spin-slow text-accent" />
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-3 p-3.5">
+        <span className="text-[13px] font-medium text-fg">{demo.name}</span>
+        <span className="rounded-md border border-neonBlue/40 bg-neonBlue/10 px-2 py-1 text-[11px] text-fg-muted">Analyze</span>
+      </div>
+    </button>
   );
 }
 

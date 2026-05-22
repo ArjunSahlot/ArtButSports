@@ -2,8 +2,9 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { ImageOff, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { absoluteImageUrl, type ArtResult } from "@/lib/api";
+import { useMasonrySpan } from "./useMasonrySpan";
 
 const SOURCES = ["embeddings", "composition", "color", "pose"] as const;
 const SOURCE_LABEL: Record<string, string> = {
@@ -30,13 +31,16 @@ function scoreTone(value: number) {
 }
 
 export function ResultCard({ item, index }: { item: ArtResult; index: number }) {
+  const cardRef = useRef<HTMLElement>(null);
   const [broken, setBroken] = useState(false);
   const src = absoluteImageUrl(item.image_url);
   const total = item.scores.total ?? 0;
+  useMasonrySpan(cardRef);
 
   return (
     <Dialog.Root>
       <article
+        ref={cardRef}
         className="masonry-item animate-fade-up"
         style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
       >
