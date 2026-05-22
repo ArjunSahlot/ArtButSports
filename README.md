@@ -51,5 +51,4 @@ scripts/run_backend.sh
 
 5. Deploy `frontend/` to Vercel with `NEXT_PUBLIC_API_BASE_URL` pointed at the VM backend and set backend `FRONTEND_ORIGIN` to the Vercel origin.
 
-More detail is in `docs/OPERATIONS.md`. Scoring details are in `docs/SCORING.md`; upload handling is in `docs/PRIVACY.md`.
-
+For the current GCP VM backend setup, use `docs/GCP_VM_SETUP.md`.
