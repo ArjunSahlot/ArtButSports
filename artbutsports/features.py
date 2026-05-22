@@ -109,37 +109,7 @@ def encode_svg_data_url(svg: str) -> str:
 
 
 def embedding_vector_svg() -> str:
-    svg = """<svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Embedding vector">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#111114"/>
-      <stop offset="100%" stop-color="#050506"/>
-    </linearGradient>
-    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#e7a94e"/>
-      <stop offset="100%" stop-color="#f2c178"/>
-    </linearGradient>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#e7a94e" flood-opacity="0.28"/>
-    </filter>
-  </defs>
-  <rect width="320" height="320" rx="28" fill="url(#bg)"/>
-  <circle cx="258" cy="62" r="42" fill="#e7a94e" opacity="0.08"/>
-  <rect x="72" y="48" width="176" height="224" rx="22" fill="#151519" stroke="#2a2a31"/>
-  <path d="M112 82H92V238H112" fill="none" stroke="#f4f4f3" stroke-opacity="0.72" stroke-width="4" stroke-linecap="round"/>
-  <path d="M208 82H228V238H208" fill="none" stroke="#f4f4f3" stroke-opacity="0.72" stroke-width="4" stroke-linecap="round"/>
-  <g filter="url(#glow)">
-    <rect x="125" y="78" width="70" height="32" rx="10" fill="#e7a94e" fill-opacity="0.16" stroke="#e7a94e" stroke-opacity="0.35"/>
-    <rect x="125" y="122" width="70" height="32" rx="10" fill="#f2c178" fill-opacity="0.13" stroke="#f2c178" stroke-opacity="0.28"/>
-    <rect x="125" y="210" width="70" height="32" rx="10" fill="#e7a94e" fill-opacity="0.16" stroke="#e7a94e" stroke-opacity="0.35"/>
-  </g>
-  <rect x="125" y="166" width="70" height="32" rx="10" fill="#222229"/>
-  <text x="160" y="100" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">0.73</text>
-  <text x="160" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">-1.24</text>
-  <text x="160" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#8b8b95">⋮</text>
-  <text x="160" y="232" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">0.18</text>
-  <path d="M68 286C112 266 144 294 184 276C218 261 238 269 260 252" fill="none" stroke="url(#line)" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
-</svg>"""
+    svg = """<svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" aria-label="Embedding vector"><defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#111114"/><stop offset="100%" stop-color="#050506"/></linearGradient><filter id="b" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#e7a94e" flood-opacity=".28"/></filter></defs><rect width="320" height="320" rx="28" fill="url(#a)"/><rect x="72" y="48" width="176" height="224" rx="22" fill="#151519" stroke="#2a2a31"/><path d="M112 82H92v156h20m96-156h20v156h-20" fill="none" stroke="#f4f4f3" stroke-opacity=".72" stroke-width="4" stroke-linecap="round"/><g filter="url(#b)"><rect x="125" y="78" width="70" height="32" rx="10" fill="#e7a94e" fill-opacity=".16" stroke="#e7a94e" stroke-opacity=".35"/><rect x="125" y="122" width="70" height="32" rx="10" fill="#f2c178" fill-opacity=".13" stroke="#f2c178" stroke-opacity=".28"/><rect x="125" y="210" width="70" height="32" rx="10" fill="#e7a94e" fill-opacity=".16" stroke="#e7a94e" stroke-opacity=".35"/></g><rect x="125" y="166" width="70" height="32" rx="10" fill="#222229"/><text x="160" y="100" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">0.73</text><text x="160" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">-1.24</text><text x="160" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="24" fill="#8b8b95">⋮</text><text x="160" y="232" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#f2c178">0.18</text></svg>"""
     return encode_svg_data_url(svg)
 
 

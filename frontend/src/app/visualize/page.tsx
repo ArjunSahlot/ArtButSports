@@ -4,7 +4,11 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, ArrowRight, Brain, Frame, ImagePlus, Palette, PersonStanding, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { visualizeSample, visualizeStep } from "@/lib/api";
+import { absoluteImageUrl, visualizeSample, visualizeStep } from "@/lib/api";
+
+function imageSrc(url: string) {
+  return url.startsWith("data:") ? url : absoluteImageUrl(url);
+}
 
 type Section = {
   step: string;
@@ -78,7 +82,11 @@ function VisualSection({ step, index, title, copy, icon: Icon }: Section) {
     visualizeSample(step)
       .then((data) => {
         const images = data.images ? (Object.values(data.images) as string[]) : [];
-        if (!cancelled) setSample({ before: data.before, after: images[0] });
+        if (!cancelled)
+          setSample({
+            before: imageSrc(data.before),
+            after: images[0] ? imageSrc(images[0]) : undefined
+          });
       })
       .catch((err) => {
         if (!cancelled)
