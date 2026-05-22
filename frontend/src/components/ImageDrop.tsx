@@ -91,13 +91,13 @@ export function ImageDrop({
             inputRef.current?.click();
           }
         }}
-        className={`group relative flex min-h-[300px] cursor-pointer items-center justify-center overflow-hidden rounded-xl2 border bg-panel transition-all duration-200 sm:min-h-[360px] ${
+        className={`group relative flex min-h-[300px] cursor-pointer items-center justify-center overflow-hidden rounded-xl2 border bg-panel/20 backdrop-blur-sm transition-all duration-200 sm:min-h-[360px] ${
           dragging
-            ? "border-neonTeal shadow-glow"
-            : "border-dashed border-line-strong hover:border-neonBlue/70 hover:shadow-[0_0_40px_rgba(22,151,255,0.16)]"
+            ? "border-neonTeal bg-panel/30 shadow-glow"
+            : "border-dashed border-line/70 hover:border-neonBlue/70 hover:bg-panel/30 hover:shadow-[0_0_40px_rgba(22,151,255,0.16)]"
         }`}
       >
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(22,151,255,0.10),transparent_35%),linear-gradient(315deg,rgba(25,215,193,0.08),transparent_36%),linear-gradient(45deg,rgba(255,138,0,0.08),transparent_42%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(22,151,255,0.06),transparent_35%),linear-gradient(315deg,rgba(25,215,193,0.05),transparent_36%),linear-gradient(45deg,rgba(255,138,0,0.05),transparent_42%)]" />
         {preview ? (
           <>
             <img
@@ -139,10 +139,10 @@ export function ImageDrop({
         ) : (
           <div className="px-8 text-center">
             <div
-              className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border transition-all duration-200 ${
+              className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border backdrop-blur-sm transition-all duration-200 ${
                 dragging
                   ? "border-neonTeal bg-neonTeal/10 text-neonTeal"
-                  : "border-line bg-elevated text-fg-muted group-hover:text-fg"
+                  : "border-line/60 bg-white/[0.04] text-fg-muted group-hover:border-line group-hover:bg-white/[0.07] group-hover:text-fg"
               }`}
             >
               <ImagePlus size={24} />
