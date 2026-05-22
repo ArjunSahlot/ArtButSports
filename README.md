@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logo.png" alt="ArtButSports logo" width="120" />
+<img src="frontend/public/logo.png" alt="ArtButSports logo" width="120" />
 
 # ArtButSports
 
