@@ -6,15 +6,13 @@ import { ImageDrop } from "@/components/ImageDrop";
 import { ResultCard } from "@/components/ResultCard";
 import { Weights } from "@/components/Weights";
 import {
-  absoluteImageUrl,
   defaultWeights,
-  listDemos,
   queryArt,
   queryDemo,
   type ArtResult,
-  type DemoImage,
   type WeightPayload
 } from "@/lib/api";
+import { DEMO_IMAGES, type DemoImage } from "@/lib/samples";
 
 const PAGE_SIZE = 28;
 
@@ -28,7 +26,6 @@ export default function QueryPage() {
   const [loading, setLoading] = useState(false);
   const [paging, setPaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [demos, setDemos] = useState<DemoImage[]>([]);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const reqId = useRef(0);
@@ -107,12 +104,6 @@ export default function QueryPage() {
   const hasResults = items.length > 0;
   const exhausted = hasResults && items.length >= total && !paging;
 
-  useEffect(() => {
-    listDemos()
-      .then(setDemos)
-      .catch(() => setDemos([]));
-  }, []);
-
   async function chooseDemo(demo: DemoImage) {
     setDemoLoading(demo.filename);
     setError(null);
@@ -140,7 +131,7 @@ export default function QueryPage() {
       <section className="mx-auto mt-10 max-w-5xl space-y-3">
         <ImageDrop
           file={selectedDemo ? null : file}
-          previewUrl={selectedDemo ? absoluteImageUrl(selectedDemo.url) : null}
+          previewUrl={selectedDemo ? selectedDemo.url : null}
           previewName={selectedDemo?.name}
           onFile={(next) => {
             setSelectedDemo(null);
@@ -176,7 +167,7 @@ export default function QueryPage() {
 
       {/* States */}
       {!file && !error && (
-        <DemoGallery demos={demos} loading={demoLoading} onPick={chooseDemo} />
+        <DemoGallery demos={DEMO_IMAGES} loading={demoLoading} onPick={chooseDemo} />
       )}
 
       {file && loading && <QueryLoading />}
@@ -254,7 +245,7 @@ function DemoGallery({
           >
             <div className="relative">
               <img
-                src={absoluteImageUrl(demo.url)}
+                src={demo.url}
                 alt={demo.name}
                 className="w-full object-cover transition duration-300 group-hover:scale-[1.025]"
               />
@@ -273,11 +264,6 @@ function DemoGallery({
           </button>
         ))}
       </div>
-      {demos.length === 0 && (
-        <div className="rounded-xl border border-line bg-panel p-5 text-[13px] text-fg-muted">
-          Demo images are unavailable. Add images to <span className="font-mono">data/demos</span>.
-        </div>
-      )}
     </section>
   );
 }

@@ -3,12 +3,9 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, ArrowRight, Brain, Frame, ImagePlus, Palette, PersonStanding, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { absoluteImageUrl, visualizeSample, visualizeStep } from "@/lib/api";
-
-function imageSrc(url: string) {
-  return url.startsWith("data:") ? url : absoluteImageUrl(url);
-}
+import { useRef, useState } from "react";
+import { visualizeStep } from "@/lib/api";
+import { VISUALIZE_SAMPLES } from "@/lib/samples";
 
 type Section = {
   step: string;
@@ -82,27 +79,7 @@ export default function VisualizePage() {
 }
 
 function VisualSection({ step, index, title, copy, icon: Icon, color, border }: Section) {
-  const [sample, setSample] = useState<{ before?: string; after?: string; error?: string }>({});
-
-  useEffect(() => {
-    let cancelled = false;
-    visualizeSample(step)
-      .then((data) => {
-        const images = data.images ? (Object.values(data.images) as string[]) : [];
-        if (!cancelled)
-          setSample({
-            before: imageSrc(data.before),
-            after: images[0] ? imageSrc(images[0]) : undefined
-          });
-      })
-      .catch((err) => {
-        if (!cancelled)
-          setSample({ error: err instanceof Error ? err.message : "Sample unavailable" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [step]);
+  const sample = VISUALIZE_SAMPLES[step];
 
   return (
     <section className={`grid gap-6 rounded-xl2 border bg-panel p-5 shadow-soft sm:p-7 md:grid-cols-[0.82fr_1.18fr] ${border}`}>
@@ -123,27 +100,25 @@ function VisualSection({ step, index, title, copy, icon: Icon, color, border }: 
         </div>
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <VisualPanel src={sample.before} label="Input" error={sample.error} />
+        <VisualPanel src={sample?.before} label="Input" />
         <ArrowRight size={18} style={{ color }} />
-        <VisualPanel src={sample.after} label={title} error={sample.error} />
+        <VisualPanel src={sample?.after} label={title} />
       </div>
     </section>
   );
 }
 
-function VisualPanel({ src, label, error }: { src?: string; label: string; error?: string }) {
+function VisualPanel({ src, label }: { src?: string; label: string }) {
   return (
     <div className="space-y-1.5">
       <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line-strong bg-ink/70">
         {src ? (
           <img src={src} alt={label} className="h-full w-full object-contain" />
-        ) : error ? (
+        ) : (
           <span className="flex flex-col items-center gap-1.5 px-4 text-center text-[11px] text-fg-dim">
             <AlertTriangle size={16} />
             Sample unavailable
           </span>
-        ) : (
-          <div className="h-full w-full animate-pulse bg-elevated" />
         )}
       </div>
       <p className="text-center text-[11px] uppercase tracking-wide text-fg-dim">{label}</p>

@@ -23,12 +23,6 @@ export type QueryResponse = {
   total: number;
 };
 
-export type DemoImage = {
-  name: string;
-  filename: string;
-  url: string;
-};
-
 export const defaultWeights: WeightPayload = {
   sources: { embeddings: 0.46, composition: 0.22, color: 0.22, pose: 0.1 },
   enabled: { embeddings: true, composition: true, color: true, pose: true },
@@ -94,20 +88,6 @@ export async function visualizeStep(file: File, step: string) {
   if (!res.ok) return failure(res);
   return res.json();
 }
-
-export async function visualizeSample(step: string) {
-  const res = await fetch(`${API_BASE}/visualize/sample/${step}`);
-  if (!res.ok) return failure(res);
-  return res.json();
-}
-
-export async function listDemos(): Promise<DemoImage[]> {
-  const res = await fetch(`${API_BASE}/demos`);
-  if (!res.ok) return failure(res);
-  const data = await res.json();
-  return data.items ?? [];
-}
-
 
 export function absoluteImageUrl(url: string) {
   if (!url) return "";
