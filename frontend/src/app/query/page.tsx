@@ -124,6 +124,18 @@ export default function QueryPage() {
             Drop in a sports frame or pick a demo. ArtButSports compares semantics, composition,
             color, and pose against public-domain artworks.
           </p>
+          <p className="mt-2 max-w-xl text-[13px] text-fg-dim">
+            Inspired by{" "}
+            <a
+              href="https://www.instagram.com/artbutmakeitsports/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-fg-muted underline decoration-line-strong underline-offset-2 transition-colors hover:text-fg"
+            >
+              @artbutmakeitsports
+            </a>{" "}
+            on Instagram.
+          </p>
         </div>
       </section>
 
