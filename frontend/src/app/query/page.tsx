@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Loader2, Search, Sparkles, Zap } from "lucide-react";
+import { AlertTriangle, Loader2, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageDrop } from "@/components/ImageDrop";
 import { ResultCard } from "@/components/ResultCard";
@@ -124,26 +124,15 @@ export default function QueryPage() {
   return (
     <main className="mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
       {/* Hero */}
-      <section className="mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-[0.95fr_1.05fr]">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-neonTeal/35 bg-neonTeal/10 px-3 py-1 text-[12px] text-fg-muted shadow-[0_0_24px_rgba(25,215,193,0.12)]">
-            <Zap size={12} className="text-neonTeal" />
-            Four visual signals. One ranked collection.
-          </span>
-          <h1 className="mt-5 text-balance text-4xl font-black tracking-tight text-fg sm:text-6xl">
-            Match motion to{" "}
-            <span className="bg-gradient-to-r from-neonBlue via-neonTeal to-neonPurple bg-clip-text text-transparent">
-              museum memory
-            </span>
+      <section className="mx-auto max-w-5xl">
+        <div className="max-w-3xl">
+          <h1 className="text-balance text-4xl font-black tracking-tight text-fg sm:text-6xl">
+            Art But Sports
           </h1>
           <p className="mt-4 max-w-xl text-balance text-[15px] leading-relaxed text-fg-muted sm:text-base">
             Drop in a sports frame or pick a demo. ArtButSports compares semantics, composition,
             color, and pose against public-domain artworks.
           </p>
-        </div>
-        <div className="relative mx-auto w-full max-w-[430px]">
-          <div className="absolute inset-6 rounded-[2rem] bg-gradient-to-br from-neonBlue/20 via-neonTeal/20 to-neonPurple/20 blur-2xl" />
-          <img src="/logo.png" alt="ArtButSports logo" className="relative w-full drop-shadow-[0_0_38px_rgba(25,215,193,0.22)]" />
         </div>
       </section>
 

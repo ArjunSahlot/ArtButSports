@@ -44,10 +44,6 @@ export function Weights({
     onChange({ ...value, [group]: { ...value[group], [name]: weight } });
   }
 
-  const activeTotal = sources.reduce(
-    (sum, s) => sum + value.sources[s.key],
-    0
-  );
   const isDefault = JSON.stringify(value) === JSON.stringify(defaultWeights);
 
   return (
@@ -75,7 +71,6 @@ export function Weights({
       <div className="grid gap-2.5 sm:grid-cols-2">
         {sources.map((source) => {
           const weight = value.sources[source.key];
-          const share = activeTotal > 0 ? (weight / activeTotal) * 100 : 0;
           const Icon = source.icon;
           return (
             <div
@@ -95,9 +90,6 @@ export function Weights({
                     <p className="text-[11px] text-fg-muted">{source.blurb}</p>
                   </div>
                 </div>
-                <span className="rounded-md border border-line bg-panel px-2 py-1 font-mono text-[11px] text-fg-muted">
-                  {weight <= 0 ? "0%" : `${share.toFixed(0)}%`}
-                </span>
               </div>
               <div className="mt-3 flex items-center gap-3">
                 <Slider
@@ -108,7 +100,7 @@ export function Weights({
                   to={source.to}
                 />
                 <span className="w-10 shrink-0 text-right font-mono text-[12px] tabular-nums text-fg">
-                  {weight.toFixed(2)}
+                  {Math.round(weight * 100)}%
                 </span>
               </div>
             </div>
@@ -201,7 +193,7 @@ function LabeledSlider({
     <div>
       <div className="mb-1.5 flex justify-between text-[13px]">
         <span className="capitalize text-fg">{label}</span>
-        <span className="font-mono text-[12px] tabular-nums text-fg-muted">{value.toFixed(2)}</span>
+        <span className="font-mono text-[12px] tabular-nums text-fg-muted">{Math.round(value * 100)}%</span>
       </div>
       <Slider value={value} onChange={onChange} aria-label={label} />
     </div>

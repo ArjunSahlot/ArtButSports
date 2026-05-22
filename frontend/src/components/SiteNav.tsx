@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Github } from "lucide-react";
-import { Wordmark } from "./Logo";
+import { LogoMark } from "./Logo";
 
 const links = [
   { href: "/query", label: "Query" },
@@ -14,10 +14,10 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/80 bg-ink/78 backdrop-blur-xl">
-      <div className="mx-auto flex h-[60px] max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/query" aria-label="ArtButSports home" className="transition-opacity hover:opacity-80">
-          <Wordmark />
+    <header className="sticky top-0 z-40 border-b border-line/80 bg-ink/82 backdrop-blur-xl">
+      <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-5 sm:px-8">
+        <Link href="/query" aria-label="ArtButSports home" className="transition-opacity hover:opacity-85">
+          <LogoMark size={46} />
         </Link>
 
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 sm:flex">

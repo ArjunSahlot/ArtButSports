@@ -62,20 +62,14 @@ const sections: Section[] = [
 export default function VisualizePage() {
   return (
     <main className="mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
-      <section className="grid items-center gap-8 md:grid-cols-[1fr_0.55fr]">
-        <div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-neonPurple/35 bg-neonPurple/10 px-3 py-1 text-[12px] text-fg-muted">
-          Under the hood
-        </span>
-        <h1 className="mt-5 text-balance text-3xl font-black tracking-tight text-fg sm:text-5xl">
+      <section className="max-w-3xl">
+        <h1 className="text-balance text-3xl font-black tracking-tight text-fg sm:text-5xl">
           How ArtButSports sees an image
         </h1>
         <p className="mt-4 text-balance text-[15px] leading-relaxed text-fg-muted sm:text-base">
           Every match is the sum of four independent signals. Each one transforms your image into a
-          comparable descriptor — here&apos;s what that transformation looks like.
+          comparable descriptor. Here&apos;s what that transformation looks like.
         </p>
-        </div>
-        <img src="/logo.png" alt="ArtButSports logo" className="hidden w-full max-w-[260px] justify-self-end drop-shadow-[0_0_36px_rgba(165,73,255,0.22)] md:block" />
       </section>
 
       <div className="mt-14 space-y-5">
