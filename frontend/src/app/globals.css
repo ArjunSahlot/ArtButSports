@@ -4,9 +4,13 @@
 
 :root {
   color-scheme: dark;
-  --accent: #e7a94e;
-  --accent-bright: #f2c178;
-  --track: #2a2a31;
+  --accent: #19d7c1;
+  --accent-bright: #2da1ff;
+  --track: #182130;
+  --neon-blue: #1697ff;
+  --neon-teal: #19d7c1;
+  --neon-orange: #ff8a00;
+  --neon-purple: #a549ff;
 }
 
 * {
@@ -20,7 +24,7 @@ body {
 }
 
 body {
-  background: #0a0a0b;
+  background: #030405;
   color: #f4f4f3;
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -30,7 +34,7 @@ body {
 }
 
 ::selection {
-  background: rgba(231, 169, 78, 0.28);
+  background: rgba(25, 215, 193, 0.28);
   color: #fff;
 }
 
@@ -41,9 +45,11 @@ body {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 50% at 50% -8%, rgba(231, 169, 78, 0.10), transparent 70%),
-    radial-gradient(40% 40% at 100% 0%, rgba(120, 110, 200, 0.06), transparent 70%),
-    #0a0a0b;
+    linear-gradient(135deg, rgba(22, 151, 255, 0.12), transparent 28%),
+    linear-gradient(225deg, rgba(25, 215, 193, 0.10), transparent 30%),
+    linear-gradient(45deg, rgba(255, 138, 0, 0.08), transparent 32%),
+    linear-gradient(315deg, rgba(165, 73, 255, 0.10), transparent 34%),
+    #030405;
 }
 
 .backdrop::after {
@@ -51,11 +57,14 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(70% 55% at 50% 0%, #000 0%, transparent 80%);
-  -webkit-mask-image: radial-gradient(70% 55% at 50% 0%, #000 0%, transparent 80%);
+    linear-gradient(45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.035) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.035) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.035) 75%);
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+  background-size: 24px 24px;
+  mask-image: radial-gradient(75% 62% at 50% 0%, #000 0%, transparent 82%);
+  -webkit-mask-image: radial-gradient(75% 62% at 50% 0%, #000 0%, transparent 82%);
 }
 
 /* ---- scrollbar ---- */
@@ -69,7 +78,7 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #2a2a31;
   border-radius: 999px;
-  border: 3px solid #0a0a0b;
+  border: 3px solid #030405;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #3a3a44;
@@ -115,12 +124,12 @@ body {
   opacity: 0.4;
 }
 .slider::-webkit-slider-runnable-track {
-  height: 5px;
+  height: 6px;
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    var(--accent) 0%,
-    var(--accent-bright) var(--pct),
+    var(--slider-from, var(--accent-bright)) 0%,
+    var(--slider-to, var(--accent)) var(--pct),
     var(--track) var(--pct),
     var(--track) 100%
   );
@@ -132,9 +141,9 @@ body {
   height: 19px;
   width: 19px;
   border-radius: 999px;
-  background: #faf7f1;
-  border: 1px solid rgba(0, 0, 0, 0.35);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  background: #fbfcff;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 18px rgba(45, 161, 255, 0.34), 0 2px 8px rgba(0, 0, 0, 0.55);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .slider:hover:not(:disabled)::-webkit-slider-thumb {
@@ -142,10 +151,10 @@ body {
 }
 .slider:active:not(:disabled)::-webkit-slider-thumb {
   transform: scale(1.05);
-  box-shadow: 0 0 0 7px rgba(231, 169, 78, 0.16), 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 7px rgba(25, 215, 193, 0.18), 0 0 22px rgba(45, 161, 255, 0.36);
 }
 .slider:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px rgba(231, 169, 78, 0.4);
+  box-shadow: 0 0 0 4px rgba(25, 215, 193, 0.4);
 }
 .slider::-moz-range-track {
   height: 5px;

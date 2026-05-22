@@ -5,19 +5,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0a0a0b",
-        surface: "#0e0e10",
-        panel: "#141417",
-        elevated: "#1a1a1e",
-        line: "#26262c",
-        "line-strong": "#36363e",
-        fg: "#f4f4f3",
-        "fg-muted": "#a4a4ac",
-        "fg-dim": "#6c6c76",
-        accent: "#e7a94e",
-        "accent-bright": "#f2c178",
-        "accent-deep": "#b9821f",
-        danger: "#ef6f6f"
+        ink: "#030405",
+        surface: "#080a0e",
+        panel: "#0b0e13",
+        elevated: "#111622",
+        line: "#1d2633",
+        "line-strong": "#314154",
+        fg: "#fbfcff",
+        "fg-muted": "#aab4c4",
+        "fg-dim": "#687386",
+        accent: "#19d7c1",
+        "accent-bright": "#2da1ff",
+        "accent-deep": "#0f766e",
+        neonBlue: "#1697ff",
+        neonTeal: "#19d7c1",
+        neonOrange: "#ff8a00",
+        neonPurple: "#a549ff",
+        danger: "#ff4778"
       },
       fontFamily: {
         sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
@@ -26,7 +30,7 @@ const config: Config = {
       boxShadow: {
         soft: "0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -8px rgba(0,0,0,0.6)",
         lift: "0 2px 4px rgba(0,0,0,0.5), 0 20px 48px -12px rgba(0,0,0,0.7)",
-        glow: "0 0 0 1px rgba(231,169,78,0.18), 0 8px 40px -8px rgba(231,169,78,0.22)"
+        glow: "0 0 0 1px rgba(25,215,193,0.25), 0 0 32px rgba(45,161,255,0.18), 0 18px 56px -20px rgba(165,73,255,0.35)"
       },
       borderRadius: {
         xl2: "1.25rem"

@@ -93,10 +93,11 @@ export function ImageDrop({
         }}
         className={`group relative flex min-h-[300px] cursor-pointer items-center justify-center overflow-hidden rounded-xl2 border bg-panel transition-all duration-200 sm:min-h-[360px] ${
           dragging
-            ? "border-accent shadow-glow"
-            : "border-dashed border-line-strong hover:border-fg-dim"
+            ? "border-neonTeal shadow-glow"
+            : "border-dashed border-line-strong hover:border-neonBlue/70 hover:shadow-[0_0_40px_rgba(22,151,255,0.16)]"
         }`}
       >
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(22,151,255,0.10),transparent_35%),linear-gradient(315deg,rgba(25,215,193,0.08),transparent_36%),linear-gradient(45deg,rgba(255,138,0,0.08),transparent_42%)]" />
         {preview ? (
           <>
             <img
@@ -140,7 +141,7 @@ export function ImageDrop({
             <div
               className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border transition-all duration-200 ${
                 dragging
-                  ? "border-accent bg-accent/10 text-accent"
+                  ? "border-neonTeal bg-neonTeal/10 text-neonTeal"
                   : "border-line bg-elevated text-fg-muted group-hover:text-fg"
               }`}
             >

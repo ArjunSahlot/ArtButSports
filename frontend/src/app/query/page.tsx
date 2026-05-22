@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Loader2, Search, Sparkles } from "lucide-react";
+import { AlertTriangle, Loader2, Search, Sparkles, Zap } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageDrop } from "@/components/ImageDrop";
 import { ResultCard } from "@/components/ResultCard";
@@ -122,23 +122,29 @@ export default function QueryPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
+    <main className="mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
       {/* Hero */}
-      <section className="mx-auto max-w-3xl text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-[12px] text-fg-muted">
-          <Sparkles size={12} className="text-accent" />
-          Visual search across the Cleveland Museum of Art
-        </span>
-        <h1 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-fg sm:text-6xl">
-          Find the artwork hiding{" "}
-          <span className="bg-gradient-to-r from-accent-bright to-accent bg-clip-text text-transparent">
-            inside any image
+      <section className="mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-[0.95fr_1.05fr]">
+        <div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-neonTeal/35 bg-neonTeal/10 px-3 py-1 text-[12px] text-fg-muted shadow-[0_0_24px_rgba(25,215,193,0.12)]">
+            <Zap size={12} className="text-neonTeal" />
+            Four visual signals. One ranked collection.
           </span>
-        </h1>
-        <p className="mx-auto mt-4 max-w-xl text-balance text-[15px] leading-relaxed text-fg-muted sm:text-base">
-          Drop in a photograph — a sports moment, a snapshot, anything — and ArtButSports surfaces
-          centuries-old works that echo its composition, color, and form.
-        </p>
+          <h1 className="mt-5 text-balance text-4xl font-black tracking-tight text-fg sm:text-6xl">
+            Match motion to{" "}
+            <span className="bg-gradient-to-r from-neonBlue via-neonTeal to-neonPurple bg-clip-text text-transparent">
+              museum memory
+            </span>
+          </h1>
+          <p className="mt-4 max-w-xl text-balance text-[15px] leading-relaxed text-fg-muted sm:text-base">
+            Drop in a sports frame or pick a demo. ArtButSports compares semantics, composition,
+            color, and pose against public-domain artworks.
+          </p>
+        </div>
+        <div className="relative mx-auto w-full max-w-[430px]">
+          <div className="absolute inset-6 rounded-[2rem] bg-gradient-to-br from-neonBlue/20 via-neonTeal/20 to-neonPurple/20 blur-2xl" />
+          <img src="/logo.png" alt="ArtButSports logo" className="relative w-full drop-shadow-[0_0_38px_rgba(25,215,193,0.22)]" />
+        </div>
       </section>
 
       {/* Controls */}
@@ -243,7 +249,7 @@ function DemoGallery({
     <section className="mx-auto mt-12 max-w-6xl">
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-fg">Try a demo image</h2>
+          <h2 className="text-lg font-black text-fg">Demo starting lines</h2>
           <p className="mt-1 text-[13px] text-fg-muted">
             Pick one of these ready-made sports references, or upload your own above.
           </p>
@@ -255,7 +261,7 @@ function DemoGallery({
             key={demo.filename}
             type="button"
             onClick={() => onPick(demo)}
-            className="masonry-item group w-full overflow-hidden rounded-xl border border-line bg-panel text-left transition-all hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift"
+            className="masonry-item group w-full overflow-hidden rounded-xl border border-line bg-panel text-left transition-all hover:-translate-y-0.5 hover:border-neonTeal/50 hover:shadow-glow"
           >
             <div className="relative">
               <img
@@ -263,7 +269,8 @@ function DemoGallery({
                 alt={demo.name}
                 className="w-full object-cover transition duration-300 group-hover:scale-[1.025]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent opacity-90" />
+              <div className="absolute left-3 top-3 h-8 w-8 rounded-full border border-neonOrange/60 bg-neonOrange/15 shadow-[0_0_18px_rgba(255,138,0,0.22)]" />
               {loading === demo.filename && (
                 <div className="absolute inset-0 flex items-center justify-center bg-ink/60">
                   <Loader2 size={20} className="animate-spin-slow text-accent" />
@@ -272,7 +279,7 @@ function DemoGallery({
             </div>
             <div className="flex items-center justify-between gap-3 p-3.5">
               <span className="text-[13px] font-medium text-fg">{demo.name}</span>
-              <span className="text-[12px] text-fg-muted">Analyze</span>
+              <span className="rounded-md border border-neonBlue/40 bg-neonBlue/10 px-2 py-1 text-[11px] text-fg-muted">Analyze</span>
             </div>
           </button>
         ))}
@@ -305,9 +312,9 @@ function QueryLoading() {
   }, [steps.length]);
 
   return (
-    <section className="mx-auto mt-12 max-w-3xl rounded-xl2 border border-line bg-panel p-6 shadow-lift">
+    <section className="mx-auto mt-12 max-w-3xl rounded-xl2 border border-neonTeal/35 bg-panel p-6 shadow-glow">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent-deep/50 bg-accent/10 text-accent">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neonTeal/50 bg-neonTeal/10 text-neonTeal">
           <Loader2 size={19} className="animate-spin-slow" />
         </div>
         <div>
@@ -318,7 +325,7 @@ function QueryLoading() {
       </div>
       <div className="mt-5 h-2 overflow-hidden rounded-full bg-elevated">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-accent to-accent-bright transition-all duration-700"
+          className="h-full rounded-full bg-gradient-to-r from-neonBlue via-neonTeal to-neonPurple transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -328,7 +335,7 @@ function QueryLoading() {
             key={step}
             className={`rounded-lg border px-2.5 py-2 text-[11px] ${
               index <= active
-                ? "border-accent-deep/50 bg-accent/10 text-fg"
+                ? "border-neonTeal/45 bg-neonTeal/10 text-fg"
                 : "border-line bg-elevated/40 text-fg-dim"
             }`}
           >

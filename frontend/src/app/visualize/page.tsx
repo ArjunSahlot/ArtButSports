@@ -16,6 +16,8 @@ type Section = {
   title: string;
   copy: string;
   icon: LucideIcon;
+  color: string;
+  border: string;
 };
 
 const sections: Section[] = [
@@ -24,45 +26,56 @@ const sections: Section[] = [
     index: "01",
     title: "Semantics",
     icon: Brain,
-    copy: "Gemini encodes the image into a normalized vector that captures its broad visual meaning — the subject, mood, and scene as a whole."
+    copy: "Gemini encodes the image into a normalized vector that captures its broad visual meaning — the subject, mood, and scene as a whole.",
+    color: "#1697ff",
+    border: "border-neonBlue/40"
   },
   {
     step: "composition",
     index: "02",
     title: "Composition",
     icon: Frame,
-    copy: "A MobileNet saliency map is reduced to a 16×16 grid, then paired with an edge-orientation histogram to describe how the frame is arranged."
+    copy: "A MobileNet saliency map is reduced to a 16×16 grid, then paired with an edge-orientation histogram to describe how the frame is arranged.",
+    color: "#19d7c1",
+    border: "border-neonTeal/40"
   },
   {
     step: "color",
     index: "03",
     title: "Color",
     icon: Palette,
-    copy: "LAB histograms, a quantized palette, warm/cool balance, and a contrast profile combine into a fixed descriptor of the image's color world."
+    copy: "LAB histograms, a quantized palette, warm/cool balance, and a contrast profile combine into a fixed descriptor of the image's color world.",
+    color: "#ff8a00",
+    border: "border-neonOrange/40"
   },
   {
     step: "pose",
     index: "04",
     title: "Pose",
     icon: PersonStanding,
-    copy: "YOLO pose detections become joint-angle descriptors. Pose only contributes when both images contain a confidently detected person."
+    copy: "YOLO pose detections become joint-angle descriptors. Pose only contributes when both images contain a confidently detected person.",
+    color: "#a549ff",
+    border: "border-neonPurple/40"
   }
 ];
 
 export default function VisualizePage() {
   return (
     <main className="mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
-      <section className="max-w-2xl">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-[12px] text-fg-muted">
+      <section className="grid items-center gap-8 md:grid-cols-[1fr_0.55fr]">
+        <div>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-neonPurple/35 bg-neonPurple/10 px-3 py-1 text-[12px] text-fg-muted">
           Under the hood
         </span>
-        <h1 className="mt-5 text-balance text-3xl font-semibold tracking-tight text-fg sm:text-5xl">
+        <h1 className="mt-5 text-balance text-3xl font-black tracking-tight text-fg sm:text-5xl">
           How ArtButSports sees an image
         </h1>
         <p className="mt-4 text-balance text-[15px] leading-relaxed text-fg-muted sm:text-base">
           Every match is the sum of four independent signals. Each one transforms your image into a
           comparable descriptor — here&apos;s what that transformation looks like.
         </p>
+        </div>
+        <img src="/logo.png" alt="ArtButSports logo" className="hidden w-full max-w-[260px] justify-self-end drop-shadow-[0_0_36px_rgba(165,73,255,0.22)] md:block" />
       </section>
 
       <div className="mt-14 space-y-5">
@@ -74,7 +87,7 @@ export default function VisualizePage() {
   );
 }
 
-function VisualSection({ step, index, title, copy, icon: Icon }: Section) {
+function VisualSection({ step, index, title, copy, icon: Icon, color, border }: Section) {
   const [sample, setSample] = useState<{ before?: string; after?: string; error?: string }>({});
 
   useEffect(() => {
@@ -98,10 +111,13 @@ function VisualSection({ step, index, title, copy, icon: Icon }: Section) {
   }, [step]);
 
   return (
-    <section className="grid gap-6 rounded-xl2 border border-line bg-panel p-5 sm:p-7 md:grid-cols-[0.82fr_1.18fr]">
+    <section className={`grid gap-6 rounded-xl2 border bg-panel p-5 shadow-soft sm:p-7 md:grid-cols-[0.82fr_1.18fr] ${border}`}>
       <div className="flex flex-col">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-accent-deep/50 bg-accent/10 text-accent">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-lg border bg-ink text-fg"
+            style={{ borderColor: color, boxShadow: `0 0 18px ${color}33` }}
+          >
             <Icon size={17} />
           </div>
           <span className="font-mono text-[12px] text-fg-dim">{index}</span>
@@ -114,7 +130,7 @@ function VisualSection({ step, index, title, copy, icon: Icon }: Section) {
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <VisualPanel src={sample.before} label="Input" error={sample.error} />
-        <ArrowRight size={18} className="text-fg-dim" />
+        <ArrowRight size={18} style={{ color }} />
         <VisualPanel src={sample.after} label={title} error={sample.error} />
       </div>
     </section>
@@ -124,7 +140,7 @@ function VisualSection({ step, index, title, copy, icon: Icon }: Section) {
 function VisualPanel({ src, label, error }: { src?: string; label: string; error?: string }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line bg-ink/60">
+      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line-strong bg-ink/70">
         {src ? (
           <img src={src} alt={label} className="h-full w-full object-contain" />
         ) : error ? (
@@ -152,7 +168,7 @@ function ModalPanel({
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line bg-ink/60">
+      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line-strong bg-ink/70">
         {src ? (
           <img src={src} alt={label} className="h-full w-full object-contain" />
         ) : loading ? (
@@ -211,13 +227,13 @@ function TryModal({ step, title }: { step: string; title: string }) {
         }
       }}
     >
-      <Dialog.Trigger className="inline-flex items-center gap-2 rounded-lg border border-line bg-elevated px-3.5 py-2 text-[13px] font-medium text-fg transition-colors hover:border-line-strong">
-        <ImagePlus size={14} className="text-accent" />
+      <Dialog.Trigger className="inline-flex items-center gap-2 rounded-lg border border-line bg-elevated px-3.5 py-2 text-[13px] font-medium text-fg transition-colors hover:border-neonTeal/50">
+        <ImagePlus size={14} className="text-neonTeal" />
         Try it with your own image
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 animate-fade-in bg-ink/85 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[min(720px,94vw)] -translate-x-1/2 -translate-y-1/2 animate-scale-in overflow-auto rounded-xl2 border border-line bg-panel p-6 shadow-lift">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[min(860px,94vw)] -translate-x-1/2 -translate-y-1/2 animate-scale-in overflow-auto rounded-xl2 border border-neonTeal/30 bg-panel p-6 shadow-glow">
           <div className="flex items-start justify-between">
             <div>
               <Dialog.Title className="text-base font-semibold text-fg">

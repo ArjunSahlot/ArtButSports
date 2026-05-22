@@ -7,6 +7,8 @@ type SliderProps = {
   max?: number;
   step?: number;
   disabled?: boolean;
+  from?: string;
+  to?: string;
   "aria-label"?: string;
 };
 
@@ -17,6 +19,8 @@ export function Slider({
   max = 1,
   step = 0.01,
   disabled = false,
+  from,
+  to,
   ...rest
 }: SliderProps) {
   const pct = ((value - min) / (max - min)) * 100;
@@ -29,7 +33,13 @@ export function Slider({
       step={step}
       value={value}
       disabled={disabled}
-      style={{ "--pct": `${pct}%` } as React.CSSProperties}
+      style={
+        {
+          "--pct": `${pct}%`,
+          "--slider-from": from,
+          "--slider-to": to
+        } as React.CSSProperties
+      }
       onChange={(event) => onChange(Number(event.target.value))}
       {...rest}
     />

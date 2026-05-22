@@ -11,13 +11,16 @@ type Source = {
   label: string;
   blurb: string;
   icon: LucideIcon;
+  from: string;
+  to: string;
+  border: string;
 };
 
 const sources: Source[] = [
-  { key: "embeddings", label: "Semantics", blurb: "Overall visual meaning", icon: Brain },
-  { key: "composition", label: "Composition", blurb: "Layout, saliency & edges", icon: Frame },
-  { key: "color", label: "Color", blurb: "Palette, warmth & contrast", icon: Palette },
-  { key: "pose", label: "Pose", blurb: "Human skeleton alignment", icon: PersonStanding }
+  { key: "embeddings", label: "Semantics", blurb: "Overall visual meaning", icon: Brain, from: "#1697ff", to: "#2da1ff", border: "border-neonBlue/45" },
+  { key: "composition", label: "Composition", blurb: "Layout, saliency & edges", icon: Frame, from: "#19d7c1", to: "#36f0d8", border: "border-neonTeal/45" },
+  { key: "color", label: "Color", blurb: "Palette, warmth & contrast", icon: Palette, from: "#ff8a00", to: "#ffb02e", border: "border-neonOrange/45" },
+  { key: "pose", label: "Pose", blurb: "Human skeleton alignment", icon: PersonStanding, from: "#a549ff", to: "#c47cff", border: "border-neonPurple/45" }
 ];
 
 const colorLabels = ["lab", "palette", "warmcool", "contrast"];
@@ -48,7 +51,7 @@ export function Weights({
   const isDefault = JSON.stringify(value) === JSON.stringify(defaultWeights);
 
   return (
-    <div className="rounded-xl2 border border-line bg-panel p-4 sm:p-5">
+    <div className="rounded-xl2 border border-line bg-panel/95 p-4 shadow-glow sm:p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-fg">Tune the match</h2>
@@ -61,7 +64,7 @@ export function Weights({
             type="button"
             onClick={() => onChange(defaultWeights)}
             disabled={isDefault}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12px] text-fg-muted transition-colors hover:border-line-strong hover:text-fg disabled:opacity-40 disabled:hover:border-line disabled:hover:text-fg-muted"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-ink/40 px-2.5 py-1.5 text-[12px] text-fg-muted transition-colors hover:border-neonOrange/50 hover:text-fg disabled:opacity-40 disabled:hover:border-line disabled:hover:text-fg-muted"
           >
             <RotateCcw size={13} /> Reset
           </button>
@@ -77,11 +80,14 @@ export function Weights({
           return (
             <div
               key={source.key}
-              className="rounded-xl border border-line bg-elevated/60 p-3.5 transition-colors"
+              className={`rounded-xl border bg-elevated/60 p-3.5 transition-colors ${source.border}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent-deep/50 bg-accent/10 text-accent transition-colors">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border bg-ink text-fg transition-colors"
+                    style={{ borderColor: source.from, boxShadow: `0 0 18px ${source.from}33` }}
+                  >
                     <Icon size={15} />
                   </div>
                   <div>
@@ -98,6 +104,8 @@ export function Weights({
                   value={weight}
                   onChange={(n) => setSource(source.key, n)}
                   aria-label={`${source.label} weight`}
+                  from={source.from}
+                  to={source.to}
                 />
                 <span className="w-10 shrink-0 text-right font-mono text-[12px] tabular-nums text-fg">
                   {weight.toFixed(2)}
@@ -120,12 +128,12 @@ function GranularDialog({
 }) {
   return (
     <Dialog.Root>
-      <Dialog.Trigger className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12px] text-fg-muted transition-colors hover:border-line-strong hover:text-fg">
+      <Dialog.Trigger className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-ink/40 px-2.5 py-1.5 text-[12px] text-fg-muted transition-colors hover:border-neonPurple/50 hover:text-fg">
         <SlidersHorizontal size={13} /> Advanced
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 animate-fade-in bg-ink/75 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 animate-scale-in rounded-xl2 border border-line bg-panel p-6 shadow-lift">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 animate-scale-in rounded-xl2 border border-neonTeal/30 bg-panel p-6 shadow-glow">
           <div className="flex items-start justify-between">
             <div>
               <Dialog.Title className="text-base font-semibold text-fg">

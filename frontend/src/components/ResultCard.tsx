@@ -12,13 +12,19 @@ const SOURCE_LABEL: Record<string, string> = {
   color: "Color",
   pose: "Pose"
 };
+const SOURCE_COLOR: Record<string, string> = {
+  embeddings: "#1697ff",
+  composition: "#19d7c1",
+  color: "#ff8a00",
+  pose: "#a549ff"
+};
 const DETAIL_GROUPS: { title: string; keys: string[] }[] = [
   { title: "Composition", keys: ["saliency", "edges"] },
   { title: "Color", keys: ["lab", "palette", "warmcool", "contrast"] }
 ];
 
 function scoreTone(value: number) {
-  if (value >= 0.75) return "text-accent-bright";
+  if (value >= 0.75) return "text-neonTeal";
   if (value >= 0.5) return "text-fg";
   return "text-fg-muted";
 }
@@ -34,7 +40,7 @@ export function ResultCard({ item, index }: { item: ArtResult; index: number }) 
         className="masonry-item animate-fade-up"
         style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
       >
-        <Dialog.Trigger className="group block w-full overflow-hidden rounded-xl border border-line bg-panel text-left transition-all duration-200 hover:border-line-strong hover:shadow-lift">
+        <Dialog.Trigger className="group block w-full overflow-hidden rounded-xl border border-line bg-panel text-left transition-all duration-200 hover:border-neonTeal/50 hover:shadow-glow">
           <div className="relative overflow-hidden bg-elevated">
             {broken ? (
               <div className="flex aspect-[4/5] items-center justify-center text-fg-dim">
@@ -50,7 +56,7 @@ export function ResultCard({ item, index }: { item: ArtResult; index: number }) 
               />
             )}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            <div className="absolute right-2.5 top-2.5 rounded-md border border-white/10 bg-ink/85 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-accent-bright backdrop-blur">
+            <div className="absolute right-2.5 top-2.5 rounded-md border border-neonTeal/30 bg-ink/85 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-neonTeal backdrop-blur">
               {total.toFixed(3)}
             </div>
           </div>
@@ -73,8 +79,11 @@ export function ResultCard({ item, index }: { item: ArtResult; index: number }) 
                     </span>
                     <span className="h-1 flex-1 overflow-hidden rounded-full bg-elevated">
                       <span
-                        className="block h-full rounded-full bg-gradient-to-r from-accent-deep to-accent-bright transition-[width] duration-500"
-                        style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }}
+                        className="block h-full rounded-full transition-[width] duration-500"
+                        style={{
+                          width: `${Math.max(0, Math.min(1, value)) * 100}%`,
+                          background: `linear-gradient(90deg, ${SOURCE_COLOR[key]}99, ${SOURCE_COLOR[key]})`
+                        }}
                       />
                     </span>
                     <span
@@ -94,7 +103,7 @@ export function ResultCard({ item, index }: { item: ArtResult; index: number }) 
 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 animate-fade-in bg-ink/85 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(940px,94vw)] -translate-x-1/2 -translate-y-1/2 animate-scale-in overflow-auto rounded-xl2 border border-line bg-panel shadow-lift">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(940px,94vw)] -translate-x-1/2 -translate-y-1/2 animate-scale-in overflow-auto rounded-xl2 border border-neonTeal/30 bg-panel shadow-glow">
           <Dialog.Close
             aria-label="Close"
             className="absolute right-3.5 top-3.5 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-ink/80 text-fg-muted backdrop-blur transition-colors hover:text-fg"
@@ -129,7 +138,7 @@ export function ResultCard({ item, index }: { item: ArtResult; index: number }) 
               )}
 
               <div className="mt-5 flex items-baseline gap-2 rounded-xl border border-line bg-elevated/60 px-4 py-3">
-                <span className="font-mono text-2xl font-semibold tabular-nums text-accent-bright">
+                <span className="font-mono text-2xl font-semibold tabular-nums text-neonTeal">
                   {total.toFixed(3)}
                 </span>
                 <span className="text-[12px] text-fg-muted">overall match score</span>
@@ -184,7 +193,7 @@ function ScoreRow({
       </span>
       <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-elevated">
         <span
-          className="block h-full rounded-full bg-gradient-to-r from-accent-deep to-accent-bright"
+          className="block h-full rounded-full bg-gradient-to-r from-neonBlue via-neonTeal to-neonPurple"
           style={{ width: `${Math.max(0, Math.min(1, v)) * 100}%` }}
         />
       </span>

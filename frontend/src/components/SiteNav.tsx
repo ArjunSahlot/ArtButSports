@@ -14,7 +14,7 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/70 bg-ink/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-line/80 bg-ink/78 backdrop-blur-xl">
       <div className="mx-auto flex h-[60px] max-w-7xl items-center justify-between px-5 sm:px-8">
         <Link href="/query" aria-label="ArtButSports home" className="transition-opacity hover:opacity-80">
           <Wordmark />
@@ -27,13 +27,15 @@ export function SiteNav() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative rounded-md px-3.5 py-1.5 text-sm transition-colors ${
-                  active ? "text-fg" : "text-fg-muted hover:text-fg"
+                className={`relative rounded-lg border px-3.5 py-1.5 text-sm transition-colors ${
+                  active
+                    ? "border-neonTeal/40 bg-neonTeal/10 text-fg shadow-[0_0_18px_rgba(25,215,193,0.16)]"
+                    : "border-transparent text-fg-muted hover:border-line hover:text-fg"
                 }`}
               >
                 {link.label}
                 {active && (
-                  <span className="absolute inset-x-3 -bottom-[1px] h-px bg-gradient-to-r from-transparent via-accent to-transparent" />
+                  <span className="absolute inset-x-3 -bottom-[1px] h-px bg-gradient-to-r from-transparent via-neonTeal to-transparent" />
                 )}
               </Link>
             );
@@ -62,7 +64,7 @@ export function SiteNav() {
             target="_blank"
             rel="noreferrer"
             aria-label="GitHub repository"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-fg-muted transition-all hover:border-line-strong hover:text-fg"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-fg-muted transition-all hover:border-neonPurple/60 hover:text-fg hover:shadow-[0_0_20px_rgba(165,73,255,0.22)]"
           >
             <Github size={16} />
           </a>
