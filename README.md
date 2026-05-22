@@ -93,11 +93,6 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The frontend expects the API at `http://localhost:8000` by default (`NEXT_PUBLIC_API_BASE_URL`).
 
-## Documentation
-
-- [GCP VM backend setup](docs/GCP_VM_SETUP.md) — deploy the API on a Google Cloud VM with Caddy
-- [Feature table analysis](docs/FEATURE_TABLE_ANALYSIS.md) — corpus coverage, calibration, and completeness stats
-
 ## License & attribution
 
 Artworks shown in results are **CC0 public-domain works** from the [Cleveland Museum of Art Open Access collection](https://www.clevelandart.org/open-access).
