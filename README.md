@@ -10,11 +10,6 @@ Drop in a sports photograph and surface visually resonant CC0 artworks from the 
 
 Inspired by [@artbutmakeitsports](https://www.instagram.com/artbutmakeitsports/) on Instagram.
 
-[![Live demo](https://img.shields.io/badge/demo-live-1697ff?style=for-the-badge)](https://artbutsports.vercel.app)
-[![Next.js](https://img.shields.io/badge/Next.js-15-000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![PyTorch](https://img.shields.io/badge/PyTorch-ML-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
-
 </div>
 
 ---
