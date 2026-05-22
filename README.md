@@ -6,7 +6,7 @@
 
 **Find the artwork inside any image.**
 
-Drop in a sports photograph — or any frame — and surface visually resonant CC0 artworks from the [Cleveland Museum of Art](https://www.clevelandart.org/open-access) open collection.
+Drop in a sports photograph and surface visually resonant CC0 artworks from the [Cleveland Museum of Art](https://www.clevelandart.org/open-access) open collection.
 
 Inspired by [@artbutmakeitsports](https://www.instagram.com/artbutmakeitsports/) on Instagram.
 
@@ -21,7 +21,7 @@ Inspired by [@artbutmakeitsports](https://www.instagram.com/artbutmakeitsports/)
 
 ## Overview
 
-ArtButSports is a local-first visual search app that matches your image against ~20,000 public-domain artworks. Instead of relying on a single embedding, it blends four independent signals — semantics, composition, color, and pose — with adjustable weights so you can steer results toward what matters most.
+ArtButSports is a local-first visual search app that matches your image against ~20,000 public-domain artworks. Instead of relying on a single embedding, it blends the four independent signals of semantics, composition, color, and pose with adjustable weights so you can steer results toward what matters most.
 
 Upload a photo, tune the sliders, and browse a ranked masonry grid of museum works with per-signal score breakdowns.
 
