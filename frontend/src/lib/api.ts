@@ -7,6 +7,22 @@ export type WeightPayload = {
   color: Record<string, number>;
 };
 
+export type ArtResult = {
+  id: string;
+  image_url: string;
+  title?: string;
+  creators?: string;
+  accession_number?: string;
+  scores: Record<string, number | null>;
+};
+
+export type QueryResponse = {
+  items: ArtResult[];
+  offset: number;
+  next_offset: number;
+  total: number;
+};
+
 export const defaultWeights: WeightPayload = {
   sources: { embeddings: 0.46, composition: 0.22, color: 0.22, pose: 0.1 },
   enabled: { embeddings: true, composition: true, color: true, pose: true },
@@ -14,14 +30,37 @@ export const defaultWeights: WeightPayload = {
   color: { lab: 0.4, palette: 0.3, warmcool: 0.1, contrast: 0.2 }
 };
 
-export async function queryArt(file: File, weights: WeightPayload, offset = 0, limit = 30) {
+async function failure(res: Response): Promise<never> {
+  let detail = `Request failed (${res.status})`;
+  try {
+    const body = await res.text();
+    if (body) {
+      try {
+        const parsed = JSON.parse(body);
+        detail = parsed.detail ?? body;
+      } catch {
+        detail = body;
+      }
+    }
+  } catch {
+    /* keep default */
+  }
+  throw new Error(detail);
+}
+
+export async function queryArt(
+  file: File,
+  weights: WeightPayload,
+  offset = 0,
+  limit = 30
+): Promise<QueryResponse> {
   const body = new FormData();
   body.append("image", file);
   body.append("weights", JSON.stringify(weights));
   body.append("offset", String(offset));
   body.append("limit", String(limit));
   const res = await fetch(`${API_BASE}/query`, { method: "POST", body });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) return failure(res);
   return res.json();
 }
 
@@ -30,13 +69,13 @@ export async function visualizeStep(file: File, step: string) {
   body.append("image", file);
   body.append("step", step);
   const res = await fetch(`${API_BASE}/visualize/step`, { method: "POST", body });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) return failure(res);
   return res.json();
 }
 
 export async function visualizeSample(step: string) {
   const res = await fetch(`${API_BASE}/visualize/sample/${step}`);
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) return failure(res);
   return res.json();
 }
 

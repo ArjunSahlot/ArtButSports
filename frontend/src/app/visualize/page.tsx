@@ -1,55 +1,113 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowUpRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertTriangle, ArrowRight, Brain, Frame, ImagePlus, Palette, PersonStanding, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { visualizeSample, visualizeStep } from "@/lib/api";
 
-const sections = [
-  { step: "embeddings", title: "Embeddings", copy: "Gemini maps the image into a normalized semantic vector for broad visual meaning." },
-  { step: "composition", title: "Composition", copy: "MobileNet saliency is reduced to a 16 by 16 grid, then paired with an edge-orientation histogram." },
-  { step: "color", title: "Color", copy: "LAB histograms, a quantized palette, warm/cool balance, and contrast profile become fixed vectors." },
-  { step: "pose", title: "Pose", copy: "YOLO pose detections become joint-angle descriptors; pose contributes only when both sides contain a person." }
+type Section = {
+  step: string;
+  index: string;
+  title: string;
+  copy: string;
+  icon: LucideIcon;
+};
+
+const sections: Section[] = [
+  {
+    step: "embeddings",
+    index: "01",
+    title: "Semantics",
+    icon: Brain,
+    copy: "Gemini encodes the image into a normalized vector that captures its broad visual meaning — the subject, mood, and scene as a whole."
+  },
+  {
+    step: "composition",
+    index: "02",
+    title: "Composition",
+    icon: Frame,
+    copy: "A MobileNet saliency map is reduced to a 16×16 grid, then paired with an edge-orientation histogram to describe how the frame is arranged."
+  },
+  {
+    step: "color",
+    index: "03",
+    title: "Color",
+    icon: Palette,
+    copy: "LAB histograms, a quantized palette, warm/cool balance, and a contrast profile combine into a fixed descriptor of the image's color world."
+  },
+  {
+    step: "pose",
+    index: "04",
+    title: "Pose",
+    icon: PersonStanding,
+    copy: "YOLO pose detections become joint-angle descriptors. Pose only contributes when both images contain a confidently detected person."
+  }
 ];
 
 export default function VisualizePage() {
   return (
-    <main className="mx-auto max-w-6xl px-5 py-14">
-      <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">Visualize how ArtButSports comes up with its closest matches.</h1>
-      <div className="mt-14 space-y-14">
-        {sections.map((section) => <VisualSection key={section.step} {...section} />)}
+    <main className="mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
+      <section className="max-w-2xl">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-[12px] text-fg-muted">
+          Under the hood
+        </span>
+        <h1 className="mt-5 text-balance text-3xl font-semibold tracking-tight text-fg sm:text-5xl">
+          How ArtButSports sees an image
+        </h1>
+        <p className="mt-4 text-balance text-[15px] leading-relaxed text-fg-muted sm:text-base">
+          Every match is the sum of four independent signals. Each one transforms your image into a
+          comparable descriptor — here&apos;s what that transformation looks like.
+        </p>
+      </section>
+
+      <div className="mt-14 space-y-5">
+        {sections.map((section) => (
+          <VisualSection key={section.step} {...section} />
+        ))}
       </div>
     </main>
   );
 }
 
-function VisualSection({ step, title, copy }: { step: string; title: string; copy: string }) {
+function VisualSection({ step, index, title, copy, icon: Icon }: Section) {
   const [sample, setSample] = useState<{ before?: string; after?: string; error?: string }>({});
+
   useEffect(() => {
     let cancelled = false;
     visualizeSample(step)
       .then((data) => {
-        const images = data.images ? Object.values(data.images) as string[] : [];
+        const images = data.images ? (Object.values(data.images) as string[]) : [];
         if (!cancelled) setSample({ before: data.before, after: images[0] });
       })
       .catch((err) => {
-        if (!cancelled) setSample({ error: err instanceof Error ? err.message : "Sample failed" });
+        if (!cancelled)
+          setSample({ error: err instanceof Error ? err.message : "Sample unavailable" });
       });
     return () => {
       cancelled = true;
     };
   }, [step]);
+
   return (
-    <section className="grid gap-8 border-t border-line pt-10 md:grid-cols-[0.8fr_1.2fr]">
-      <div>
-        <h2 className="text-2xl font-semibold">{title}</h2>
-        <p className="mt-3 text-zinc-400">{copy}</p>
-        <TryModal step={step} title={title} />
+    <section className="grid gap-6 rounded-xl2 border border-line bg-panel p-5 sm:p-7 md:grid-cols-[0.82fr_1.18fr]">
+      <div className="flex flex-col">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-accent-deep/50 bg-accent/10 text-accent">
+            <Icon size={17} />
+          </div>
+          <span className="font-mono text-[12px] text-fg-dim">{index}</span>
+        </div>
+        <h2 className="mt-4 text-xl font-semibold text-fg">{title}</h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-fg-muted">{copy}</p>
+        <div className="mt-auto pt-5">
+          <TryModal step={step} title={title} />
+        </div>
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-        <VisualPanel src={sample.before} label="Before" error={sample.error} />
-        <span className="text-zinc-500">→</span>
-        <VisualPanel src={sample.after} label="After" error={sample.error} />
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <VisualPanel src={sample.before} label="Input" error={sample.error} />
+        <ArrowRight size={18} className="text-fg-dim" />
+        <VisualPanel src={sample.after} label={title} error={sample.error} />
       </div>
     </section>
   );
@@ -57,12 +115,20 @@ function VisualSection({ step, title, copy }: { step: string; title: string; cop
 
 function VisualPanel({ src, label, error }: { src?: string; label: string; error?: string }) {
   return (
-    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line bg-panel">
-      {src ? (
-        <img src={src} alt={label} className="h-full w-full object-contain" />
-      ) : (
-        <span className="px-4 text-center text-xs text-zinc-500">{error ? "Sample unavailable" : "Loading"}</span>
-      )}
+    <div className="space-y-1.5">
+      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-line bg-ink/60">
+        {src ? (
+          <img src={src} alt={label} className="h-full w-full object-contain" />
+        ) : error ? (
+          <span className="flex flex-col items-center gap-1.5 px-4 text-center text-[11px] text-fg-dim">
+            <AlertTriangle size={16} />
+            Sample unavailable
+          </span>
+        ) : (
+          <div className="h-full w-full animate-pulse bg-elevated" />
+        )}
+      </div>
+      <p className="text-center text-[11px] uppercase tracking-wide text-fg-dim">{label}</p>
     </div>
   );
 }
@@ -72,13 +138,17 @@ function TryModal({ step, title }: { step: string; title: string }) {
   const [json, setJson] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   async function run(file?: File) {
     if (!file) return;
     setBusy(true);
     setError(null);
+    setImage(null);
+    setJson("");
     try {
       const data = await visualizeStep(file, step);
-      const first = data.images ? Object.values(data.images)[0] as string : null;
+      const first = data.images ? (Object.values(data.images)[0] as string) : null;
       setImage(first);
       setJson(JSON.stringify({ ...data, images: undefined }, null, 2));
     } catch (err) {
@@ -87,20 +157,78 @@ function TryModal({ step, title }: { step: string; title: string }) {
       setBusy(false);
     }
   }
+
   return (
-    <Dialog.Root>
-      <Dialog.Trigger className="mt-5 inline-flex items-center gap-2 text-sm text-white underline decoration-zinc-600 underline-offset-4">
-        Try it with your own <ArrowUpRight size={14} />
+    <Dialog.Root
+      onOpenChange={(open) => {
+        if (!open) {
+          setImage(null);
+          setJson("");
+          setError(null);
+        }
+      }}
+    >
+      <Dialog.Trigger className="inline-flex items-center gap-2 rounded-lg border border-line bg-elevated px-3.5 py-2 text-[13px] font-medium text-fg transition-colors hover:border-line-strong">
+        <ImagePlus size={14} className="text-accent" />
+        Try it with your own image
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[min(760px,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-lg border border-line bg-panel p-6">
-          <Dialog.Title className="text-lg font-semibold">{title}</Dialog.Title>
-          <input className="mt-5 w-full rounded-md border border-line bg-black p-3 text-sm" type="file" accept="image/*" onChange={(event) => run(event.target.files?.[0])} />
-          {busy && <div className="mt-5 h-48 animate-pulse rounded-lg bg-black" />}
-          {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
-          {image && <img src={image} alt={`${title} output`} className="mt-5 max-h-[460px] w-full rounded-md object-contain" />}
-          {json && <pre className="mt-4 overflow-auto rounded-md bg-black p-4 text-xs text-zinc-300">{json}</pre>}
+        <Dialog.Overlay className="fixed inset-0 z-50 animate-fade-in bg-ink/85 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[min(720px,94vw)] -translate-x-1/2 -translate-y-1/2 animate-scale-in overflow-auto rounded-xl2 border border-line bg-panel p-6 shadow-lift">
+          <div className="flex items-start justify-between">
+            <div>
+              <Dialog.Title className="text-base font-semibold text-fg">
+                {title} — live transform
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-[13px] text-fg-muted">
+                Upload an image to run the {title.toLowerCase()} step and inspect its raw output.
+              </Dialog.Description>
+            </div>
+            <Dialog.Close
+              aria-label="Close"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-line text-fg-muted transition-colors hover:text-fg"
+            >
+              <X size={14} />
+            </Dialog.Close>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-elevated/50 py-4 text-[13px] text-fg-muted transition-colors hover:border-fg-dim hover:text-fg"
+          >
+            <ImagePlus size={15} />
+            Choose an image
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => run(event.target.files?.[0])}
+          />
+
+          {busy && <div className="mt-5 h-48 animate-pulse rounded-lg bg-elevated" />}
+
+          {error && (
+            <p className="mt-4 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/10 p-3 text-[13px] text-fg-muted">
+              <AlertTriangle size={15} className="text-danger" />
+              {error}
+            </p>
+          )}
+
+          {image && (
+            <img
+              src={image}
+              alt={`${title} output`}
+              className="mt-5 max-h-[420px] w-full rounded-lg border border-line object-contain"
+            />
+          )}
+          {json && (
+            <pre className="mt-3 overflow-auto rounded-lg border border-line bg-ink/70 p-4 font-mono text-[12px] leading-relaxed text-fg-muted">
+              {json}
+            </pre>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

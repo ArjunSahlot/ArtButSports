@@ -1,39 +1,51 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Github, Moon } from "lucide-react";
+import { Geist, Geist_Mono } from "next/font/google";
+import { SiteNav } from "@/components/SiteNav";
 import "./globals.css";
 
+const geistSans = Geist({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap"
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap"
+});
+
 export const metadata: Metadata = {
-  title: "ArtButSports",
-  description: "Find visually similar CC0 artworks."
+  title: "ArtButSports — find the artwork inside any image",
+  description:
+    "Upload any photograph and surface visually resonant CC0 artworks from the Cleveland Museum of Art's open collection."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <nav className="sticky top-0 z-40 border-b border-line/80 bg-ink/85 backdrop-blur">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-            <Link href="/query" className="text-sm font-semibold tracking-wide">
-              ArtButSports
-            </Link>
-            <div className="flex gap-6 text-sm text-zinc-300">
-              <Link href="/query" className="hover:text-white">Query</Link>
-              <Link href="/visualize" className="hover:text-white">Visualize</Link>
-            </div>
-            <div className="flex items-center gap-3 text-zinc-300">
-              <button className="rounded-md border border-line p-2" aria-label="Theme">
-                <Moon size={16} />
-              </button>
-              <a className="rounded-md border border-line p-2" href="https://github.com/ArjunSahlot/ArtButSports" aria-label="GitHub">
-                <Github size={16} />
-              </a>
-            </div>
-          </div>
-        </nav>
+        <div className="backdrop" />
+        <SiteNav />
         {children}
+        <footer className="mt-24 border-t border-line/70">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-8 text-xs text-fg-dim sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <p>
+              Artworks are CC0 public-domain works from the{" "}
+              <a
+                href="https://www.clevelandart.org/open-access"
+                target="_blank"
+                rel="noreferrer"
+                className="text-fg-muted underline decoration-line-strong underline-offset-2 transition-colors hover:text-fg"
+              >
+                Cleveland Museum of Art
+              </a>
+              .
+            </p>
+            <p>Uploaded images are processed in memory and never stored.</p>
+          </div>
+        </footer>
       </body>
     </html>
   );
 }
-
