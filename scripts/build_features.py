@@ -19,7 +19,7 @@ from tqdm import tqdm
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from artbutsports.features import (  # noqa: E402
+from backend.features import (  # noqa: E402
     POSE_ANGLE_TRIPLES,
     configure_inference_device,
     embed_image_path,
@@ -30,7 +30,7 @@ from artbutsports.features import (  # noqa: E402
     read_image_path,
     warmup_inference_models,
 )
-from artbutsports.scoring import calibration_from_arrays, normalize_rows  # noqa: E402
+from backend.scoring import calibration_from_arrays, normalize_rows  # noqa: E402
 
 MANIFEST_VERSION = 2
 ARRAY_KEYS = ("embeddings", "saliency", "edges", "lab", "palette", "warmcool", "contrast")

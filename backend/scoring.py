@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 
-from artbutsports.features import (
+from backend.features import (
     extract_color,
     extract_composition,
     extract_pose,
@@ -166,4 +166,3 @@ def calibration_from_arrays(arrays: dict[str, np.ndarray]) -> dict[str, dict[str
         else:
             stats[key] = {"p05": float(np.percentile(finite, 5)), "p95": float(np.percentile(finite, 95))}
     return stats
-

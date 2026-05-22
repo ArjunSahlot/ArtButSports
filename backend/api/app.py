@@ -11,8 +11,8 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from artbutsports.features import embed_image_bytes_async, embedding_vector_svg, read_image_bytes, visualize_step
-from artbutsports.scoring import DEFAULT_WEIGHTS, FeatureStore, load_feature_store, query_feature_blocks, score_query
+from backend.features import embed_image_bytes_async, embedding_vector_svg, read_image_bytes, visualize_step
+from backend.scoring import DEFAULT_WEIGHTS, FeatureStore, load_feature_store, query_feature_blocks, score_query
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env")
