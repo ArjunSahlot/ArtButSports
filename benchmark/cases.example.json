@@ -1,0 +1,11 @@
+{
+  "cases": [
+    {
+      "id": "example_case",
+      "target": "images/targets/example_target.jpg",
+      "outputs": [
+        "images/outputs/example_expected_output.jpg"
+      ]
+    }
+  ]
+}
