@@ -1,0 +1,14 @@
+{
+  "name": "artbutsports-db-browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:index": "python scripts/build_index.py",
+    "dev": "python -m http.server 5174",
+    "build": "python scripts/build_index.py",
+    "preview": "python -m http.server 5174"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
