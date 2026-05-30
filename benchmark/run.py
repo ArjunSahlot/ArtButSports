@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import hashlib
 import json
 import mimetypes
@@ -33,6 +32,7 @@ from backend.scoring import DEFAULT_WEIGHTS, FeatureStore, load_feature_store, s
 
 FEATURE_CACHE_VERSION = 1
 DEFAULT_HIT_K = (1, 5, 10, 30, 100)
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
 SCORE_KEYS = (
     "total",
     "embeddings",
@@ -49,7 +49,7 @@ SCORE_KEYS = (
 
 
 @dataclass(frozen=True)
-class PositiveSpec:
+class TargetSpec:
     id: str
     path: Path
 
@@ -57,8 +57,8 @@ class PositiveSpec:
 @dataclass(frozen=True)
 class CaseSpec:
     id: str
-    target_path: Path
-    positives: tuple[PositiveSpec, ...]
+    input_path: Path
+    targets: tuple[TargetSpec, ...]
 
 
 @dataclass(frozen=True)
@@ -105,22 +105,25 @@ class CandidateRow:
         return {
             "id": self.id,
             "title": self.label,
-            "creators": "benchmark expected output",
+            "creators": "benchmark target",
             "accession_number": self.id,
             "benchmark_case_id": self.case_id,
             "benchmark_path": str(self.features.path),
-            "benchmark_positive": True,
+            "benchmark_target": True,
         }
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate ArtButSports ranking quality on local target/output pairs.")
-    parser.add_argument("--cases", required=True, help="JSON or CSV case manifest.")
+    parser = argparse.ArgumentParser(description="Evaluate ArtButSports ranking quality on local input/target image folders.")
+    parser.add_argument(
+        "cases_dir",
+        help="Folder containing one subfolder per benchmark case. Each case folder needs input.<ext>; all other images are targets.",
+    )
     parser.add_argument("--feature-table", default="data/features/artbutsports_features.npz")
     parser.add_argument("--weights", default=None, help="Optional JSON weights file. Defaults to backend DEFAULT_WEIGHTS.")
-    parser.add_argument("--output", default=None, help="Output report JSON. Defaults to benchmark/runs/<cases>-<timestamp>.json.")
+    parser.add_argument("--output", default=None, help="Output report JSON. Defaults to benchmark/runs/<cases_dir>-<timestamp>.json.")
     parser.add_argument("--cache-dir", default="benchmark/.cache/features")
-    parser.add_argument("--refresh-cache", action="store_true", help="Recompute target/output image features.")
+    parser.add_argument("--refresh-cache", action="store_true", help="Recompute input/target image features.")
     parser.add_argument("--hit-k", nargs="+", type=int, default=list(DEFAULT_HIT_K), help="Cutoffs for hit/recall/nDCG.")
     parser.add_argument("--top-n", type=int, default=10, help="Top ranked items to include per case.")
     parser.add_argument("--case-id", action="append", default=None, help="Run only matching case id. May be repeated.")
@@ -140,106 +143,39 @@ def resolve_repo_path(raw: str | Path) -> Path:
     return (ROOT / path).resolve()
 
 
-def resolve_case_path(raw: str | Path, manifest_dir: Path) -> Path:
-    path = Path(raw).expanduser()
-    if path.is_absolute():
-        return path.resolve()
-    manifest_candidate = (manifest_dir / path).resolve()
-    if manifest_candidate.exists():
-        return manifest_candidate
-    return (ROOT / path).resolve()
-
-
 def sanitize_id(value: str) -> str:
     clean = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in value.strip())
     return clean.strip("_") or "case"
 
 
-def first_present(row: dict[str, Any], names: tuple[str, ...]) -> Any:
-    for name in names:
-        value = row.get(name)
-        if value not in (None, ""):
-            return value
-    return None
+def is_image_path(path: Path) -> bool:
+    return path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
 
 
-def positive_from_value(value: Any, index: int, manifest_dir: Path) -> PositiveSpec:
-    if isinstance(value, str):
-        path = resolve_case_path(value, manifest_dir)
-        return PositiveSpec(id=f"positive_{index + 1}", path=path)
-    if isinstance(value, dict):
-        raw_path = first_present(value, ("path", "image", "output", "positive"))
-        if not raw_path:
-            raise ValueError(f"Positive entry #{index + 1} is missing a path/image/output field.")
-        label = str(first_present(value, ("id", "label", "name")) or f"positive_{index + 1}")
-        return PositiveSpec(id=sanitize_id(label), path=resolve_case_path(raw_path, manifest_dir))
-    raise TypeError(f"Positive entry #{index + 1} must be a string or object, got {type(value).__name__}.")
+def find_input_image(case_dir: Path) -> Path:
+    matches = sorted(path for path in case_dir.iterdir() if is_image_path(path) and path.stem.lower() == "input")
+    if not matches:
+        allowed = ", ".join(f"input{ext}" for ext in sorted(IMAGE_EXTENSIONS))
+        raise FileNotFoundError(f"Case {case_dir.name!r} is missing an input image. Expected one of: {allowed}")
+    if len(matches) > 1:
+        formatted = ", ".join(path.name for path in matches)
+        raise ValueError(f"Case {case_dir.name!r} has multiple input images: {formatted}")
+    return matches[0]
 
 
-def load_json_cases(path: Path) -> list[CaseSpec]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    raw_cases = payload.get("cases", payload) if isinstance(payload, dict) else payload
-    if not isinstance(raw_cases, list):
-        raise ValueError("JSON cases must be a list or an object with a 'cases' list.")
+def load_cases(cases_dir: Path) -> list[CaseSpec]:
+    if not cases_dir.exists() or not cases_dir.is_dir():
+        raise NotADirectoryError(f"Cases path must be a directory: {cases_dir}")
 
     cases: list[CaseSpec] = []
-    for index, item in enumerate(raw_cases):
-        if not isinstance(item, dict):
-            raise TypeError(f"Case entry #{index + 1} must be an object.")
-        raw_target = first_present(item, ("target", "query", "target_image", "query_image"))
-        if not raw_target:
-            raise ValueError(f"Case entry #{index + 1} is missing target/query.")
-        raw_outputs = first_present(item, ("outputs", "positives", "expected_outputs", "output", "positive"))
-        if raw_outputs is None:
-            raise ValueError(f"Case entry #{index + 1} is missing outputs/positives.")
-        if isinstance(raw_outputs, (str, dict)):
-            output_values = [raw_outputs]
-        else:
-            output_values = list(raw_outputs)
-        if not output_values:
-            raise ValueError(f"Case entry #{index + 1} has no expected outputs.")
-
-        target_path = resolve_case_path(raw_target, path.parent)
-        default_id = target_path.stem
-        case_id = sanitize_id(str(item.get("id") or item.get("case_id") or default_id))
-        positives = tuple(positive_from_value(value, i, path.parent) for i, value in enumerate(output_values))
-        cases.append(CaseSpec(id=case_id, target_path=target_path, positives=positives))
+    for case_dir in sorted(path for path in cases_dir.iterdir() if path.is_dir()):
+        input_path = find_input_image(case_dir)
+        target_paths = sorted(path for path in case_dir.iterdir() if is_image_path(path) and path != input_path)
+        if not target_paths:
+            raise FileNotFoundError(f"Case {case_dir.name!r} has no target images next to {input_path.name}.")
+        targets = tuple(TargetSpec(id=sanitize_id(path.stem), path=path.resolve()) for path in target_paths)
+        cases.append(CaseSpec(id=sanitize_id(case_dir.name), input_path=input_path.resolve(), targets=targets))
     return cases
-
-
-def load_csv_cases(path: Path) -> list[CaseSpec]:
-    grouped: dict[tuple[str, str], list[PositiveSpec]] = {}
-    target_paths: dict[tuple[str, str], Path] = {}
-    with path.open(newline="", encoding="utf-8") as handle:
-        reader = csv.DictReader(handle)
-        for row_index, row in enumerate(reader, start=2):
-            raw_target = first_present(row, ("target", "query", "target_image", "query_image"))
-            raw_output = first_present(row, ("output", "positive", "expected_output", "positive_image"))
-            if not raw_target or not raw_output:
-                raise ValueError(f"CSV row {row_index} must include target/query and output/positive.")
-            case_id = sanitize_id(str(first_present(row, ("case_id", "id")) or Path(raw_target).stem))
-            target_path = resolve_case_path(raw_target, path.parent)
-            label = sanitize_id(str(first_present(row, ("label", "positive_id", "output_id")) or f"positive_{row_index}"))
-            key = (case_id, str(target_path))
-            grouped.setdefault(key, []).append(PositiveSpec(id=label, path=resolve_case_path(raw_output, path.parent)))
-            target_paths[key] = target_path
-
-    cases = []
-    for case_index, ((case_id, target_key), positives) in enumerate(grouped.items(), start=1):
-        cases.append(
-            CaseSpec(
-                id=case_id or f"case_{case_index}",
-                target_path=target_paths[(case_id, target_key)],
-                positives=tuple(positives),
-            )
-        )
-    return cases
-
-
-def load_cases(path: Path) -> list[CaseSpec]:
-    if path.suffix.lower() == ".csv":
-        return load_csv_cases(path)
-    return load_json_cases(path)
 
 
 def validate_cases(cases: list[CaseSpec]) -> None:
@@ -248,7 +184,7 @@ def validate_cases(cases: list[CaseSpec]) -> None:
         if case.id in seen:
             raise ValueError(f"Duplicate case id: {case.id}")
         seen.add(case.id)
-        missing = [case.target_path, *(positive.path for positive in case.positives)]
+        missing = [case.input_path, *(target.path for target in case.targets)]
         missing = [path for path in missing if not path.exists()]
         if missing:
             formatted = "\n".join(f"  - {path}" for path in missing)
@@ -383,7 +319,7 @@ def ranked_item(store: FeatureStore, scores: dict[str, np.ndarray], index: int, 
     return {
         "rank": rank,
         "id": item_id,
-        "source": "benchmark_positive" if index >= corpus_count else "corpus",
+        "source": "benchmark_target" if index >= corpus_count else "corpus",
         "title": metadata.get("title"),
         "creators": metadata.get("creators"),
         "path": metadata.get("benchmark_path"),
@@ -416,34 +352,34 @@ def evaluate_case(
     refresh_cache: bool,
     skip_embeddings: bool,
 ) -> dict[str, Any]:
-    target_features = extract_image_features(case.target_path, cache_dir, refresh_cache, skip_embeddings)
+    input_features = extract_image_features(case.input_path, cache_dir, refresh_cache, skip_embeddings)
     candidates = []
-    for positive_index, positive in enumerate(case.positives, start=1):
+    for target_index, target in enumerate(case.targets, start=1):
         candidates.append(
             CandidateRow(
-                id=f"benchmark::{case.id}::{positive_index}::{positive.id}",
-                label=positive.id,
+                id=f"benchmark::{case.id}::{target_index}::{target.id}",
+                label=target.id,
                 case_id=case.id,
-                features=extract_image_features(positive.path, cache_dir, refresh_cache, skip_embeddings),
+                features=extract_image_features(target.path, cache_dir, refresh_cache, skip_embeddings),
             )
         )
 
     corpus_count = len(store.ids)
     augmented_store = append_candidates(store, candidates)
-    scores = score_query(augmented_store, target_features.as_query(), weights)
+    scores = score_query(augmented_store, input_features.as_query(), weights)
     order = scores["total"].argsort()[::-1]
     ranks = np.empty(len(order), dtype=np.int64)
     ranks[order] = np.arange(1, len(order) + 1)
-    positive_indices = list(range(corpus_count, corpus_count + len(candidates)))
-    positive_ranks = [int(ranks[index]) for index in positive_indices]
-    best_rank = min(positive_ranks)
+    target_indices = list(range(corpus_count, corpus_count + len(candidates)))
+    target_ranks = [int(ranks[index]) for index in target_indices]
+    best_rank = min(target_ranks)
     total_ranked = len(order)
 
-    positive_items = [
+    target_items = [
         ranked_item(augmented_store, scores, index, int(ranks[index]), corpus_count)
-        for index in positive_indices
+        for index in target_indices
     ]
-    positive_items.sort(key=lambda item: item["rank"])
+    target_items.sort(key=lambda item: item["rank"])
 
     top_items = [
         ranked_item(augmented_store, scores, int(index), rank, corpus_count)
@@ -452,24 +388,24 @@ def evaluate_case(
 
     metrics: dict[str, Any] = {
         "best_rank": best_rank,
-        "mean_positive_rank": float(np.mean(positive_ranks)),
-        "median_positive_rank": float(np.median(positive_ranks)),
+        "mean_target_rank": float(np.mean(target_ranks)),
+        "median_target_rank": float(np.median(target_ranks)),
         "reciprocal_rank": float(1.0 / best_rank),
-        "average_precision": average_precision(positive_ranks),
+        "average_precision": average_precision(target_ranks),
         "best_rank_percentile": float(1.0 - ((best_rank - 1) / max(1, total_ranked - 1))),
     }
     for k in hit_k:
-        metrics[f"hit@{k}"] = bool(any(rank <= k for rank in positive_ranks))
-        metrics[f"recall@{k}"] = float(sum(rank <= k for rank in positive_ranks) / len(positive_ranks))
-        metrics[f"ndcg@{k}"] = ndcg_at_k(positive_ranks, k)
+        metrics[f"hit@{k}"] = bool(any(rank <= k for rank in target_ranks))
+        metrics[f"recall@{k}"] = float(sum(rank <= k for rank in target_ranks) / len(target_ranks))
+        metrics[f"ndcg@{k}"] = ndcg_at_k(target_ranks, k)
 
     return {
         "id": case.id,
-        "target": str(case.target_path),
-        "positive_count": len(candidates),
+        "input": str(case.input_path),
+        "target_count": len(candidates),
         "total_ranked": total_ranked,
         "metrics": metrics,
-        "positives": positive_items,
+        "targets": target_items,
         "top": top_items,
     }
 
@@ -481,12 +417,12 @@ def summarize(case_results: list[dict[str, Any]], hit_k: list[int]) -> dict[str,
     metrics = [case["metrics"] for case in case_results]
     summary: dict[str, Any] = {
         "case_count": len(case_results),
-        "positive_count": int(sum(case["positive_count"] for case in case_results)),
+        "target_count": int(sum(case["target_count"] for case in case_results)),
         "score": float(np.mean([metric["reciprocal_rank"] for metric in metrics])),
         "score_name": "mean_reciprocal_rank",
         "mean_best_rank": float(np.mean([metric["best_rank"] for metric in metrics])),
         "median_best_rank": float(np.median([metric["best_rank"] for metric in metrics])),
-        "mean_positive_rank": float(np.mean([metric["mean_positive_rank"] for metric in metrics])),
+        "mean_target_rank": float(np.mean([metric["mean_target_rank"] for metric in metrics])),
         "mean_average_precision": float(np.mean([metric["average_precision"] for metric in metrics])),
         "mean_best_rank_percentile": float(np.mean([metric["best_rank_percentile"] for metric in metrics])),
     }
@@ -497,9 +433,9 @@ def summarize(case_results: list[dict[str, Any]], hit_k: list[int]) -> dict[str,
     return summary
 
 
-def default_output_path(cases_path: Path) -> Path:
+def default_output_path(cases_dir: Path) -> Path:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    return ROOT / "benchmark" / "runs" / f"{cases_path.stem}-{stamp}.json"
+    return ROOT / "benchmark" / "runs" / f"{cases_dir.name}-{stamp}.json"
 
 
 def load_weights(path: str | None) -> dict[str, Any] | None:
@@ -515,10 +451,10 @@ def print_report(report: dict[str, Any], output_path: Path) -> None:
     hit_value = summary.get(hit_key, 0.0) if hit_key else 0.0
     print(f"Benchmark score ({summary['score_name']}): {summary['score']:.4f}")
     print(
-        "Cases: {case_count} | Positives: {positive_count} | "
+        "Cases: {case_count} | Targets: {target_count} | "
         "Mean best rank: {mean_best_rank:.2f} | {hit_label}: {hit_value:.2%}".format(
             case_count=summary["case_count"],
-            positive_count=summary["positive_count"],
+            target_count=summary["target_count"],
             mean_best_rank=summary["mean_best_rank"],
             hit_label=hit_label,
             hit_value=hit_value,
@@ -538,13 +474,13 @@ def main() -> None:
     load_dotenv(ROOT / ".env")
     configure_inference_device(args.device)
 
-    cases_path = resolve_repo_path(args.cases)
-    cases = load_cases(cases_path)
+    cases_dir = resolve_repo_path(args.cases_dir)
+    cases = load_cases(cases_dir)
     if args.case_id:
         allowed = set(args.case_id)
         cases = [case for case in cases if case.id in allowed]
     if not cases:
-        raise SystemExit("No benchmark cases matched the requested manifest/filter.")
+        raise SystemExit("No benchmark cases matched the requested folder/filter.")
     validate_cases(cases)
 
     hit_k = sorted(set(k for k in args.hit_k if k > 0))
@@ -569,7 +505,7 @@ def main() -> None:
         for case in cases
     ]
 
-    output_path = resolve_repo_path(args.output) if args.output else default_output_path(cases_path)
+    output_path = resolve_repo_path(args.output) if args.output else default_output_path(cases_dir)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -578,6 +514,7 @@ def main() -> None:
         "weights": weights if weights is not None else DEFAULT_WEIGHTS,
         "embedding_mode": "zero-smoke-test" if args.skip_embeddings else EMBED_MODEL,
         "inference": inference_device_info(),
+        "cases_dir": str(cases_dir),
         "summary": summarize(case_results, hit_k),
         "cases": case_results,
     }
